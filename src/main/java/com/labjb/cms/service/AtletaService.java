@@ -52,6 +52,11 @@ public class AtletaService {
                 .map(atletaMapper::toDto);
     }
 
+    public Page<AtletaDto> listarAtletasPorCategoria(String filtro, UUID categoriaId, Pageable pageable) {
+        return atletaRepository.findAllByCategoriaWithFilter(filtro, categoriaId, pageable)
+                .map(atletaMapper::toDto);
+    }
+
     public AtletaDto visualizarAtleta(UUID id) {
         return atletaRepository.findByUuid(id)
                 .map(atletaMapper::toDto)

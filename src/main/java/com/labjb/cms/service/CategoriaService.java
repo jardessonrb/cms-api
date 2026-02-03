@@ -3,15 +3,21 @@ package com.labjb.cms.service;
 import com.labjb.cms.domain.dto.in.CategoriaForm;
 import com.labjb.cms.domain.dto.out.CategoriaDto;
 import com.labjb.cms.domain.enums.SituacaoCategoriaEnum;
+import com.labjb.cms.domain.enums.SituacaoInscricaoCategoriaEnum;
 import com.labjb.cms.domain.model.Categoria;
 import com.labjb.cms.domain.model.Campeonato;
+import com.labjb.cms.domain.model.InscricaoCategoria;
+import com.labjb.cms.domain.model.Atleta;
 import com.labjb.cms.repository.CategoriaRepository;
 import com.labjb.cms.repository.CampeonatoRepository;
+import com.labjb.cms.repository.InscricaoCategoriaRepository;
+import com.labjb.cms.repository.AtletaRepository;
 import com.labjb.cms.shared.mapper.CategoriaMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -20,6 +26,8 @@ public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
     private final CampeonatoRepository campeonatoRepository;
+    private final InscricaoCategoriaRepository inscricaoCategoriaRepository;
+    private final AtletaRepository atletaRepository;
     private final CategoriaMapper categoriaMapper;
 
     public CategoriaDto criaCategoria(CategoriaForm categoriaForm) {
@@ -51,5 +59,43 @@ public class CategoriaService {
                 .stream()
                 .map(categoriaMapper::toDto)
                 .toList();
+    }
+
+    public void inscreveAtletaEmCategoria(UUID categoriaId, UUID atletaId) {
+        Categoria categoria = categoriaRepository.findByUuid(categoriaId)
+                .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
+
+        Atleta atleta = atletaRepository.findByUuid(atletaId)
+                .orElseThrow(() -> new RuntimeException("Atleta não encontrado"));
+
+        // Verificar se o atleta pertence ao mesmo campeonato da categoria
+        if (!atleta.getCampeonato().getUuid().equals(categoria.getCampeonato().getUuid())) {
+            throw new RuntimeException("Atleta não pertence ao mesmo campeonato da categoria");
+        }
+
+        // Verificar se já existe inscrição
+        if (inscricaoCategoriaRepository.findByAtletaAndCategoria(atletaId, categoriaId).isPresent()) {
+            throw new RuntimeException("Atleta já inscrito nesta categoria");
+        }
+
+        // Criar inscrição
+        InscricaoCategoria inscricao = InscricaoCategoria.builder()
+                .atleta(atleta)
+                .categoria(categoria)
+                .situacao(SituacaoInscricaoCategoriaEnum.ATIVO)
+                .build();
+
+        inscricaoCategoriaRepository.save(inscricao);
+    }
+
+    public void removeInscricaoDeAtletaEmCategoria(UUID categoriaId, UUID atletaId) {
+        // Verificar se existe inscrição
+        Optional<InscricaoCategoria> inscricaoCategoria = inscricaoCategoriaRepository.findByAtletaAndCategoria(atletaId, categoriaId);
+        if (inscricaoCategoria.isEmpty()) {
+            throw new RuntimeException("Inscrição não encontrada");
+        }
+
+        // Remover inscrição
+        inscricaoCategoriaRepository.delete(inscricaoCategoria.get());
     }
 }

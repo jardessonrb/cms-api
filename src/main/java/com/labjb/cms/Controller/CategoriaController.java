@@ -45,4 +45,22 @@ public class CategoriaController {
             @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId) {
         return ResponseEntity.ok(categoriaService.listarCategoriasPorCampeonato(campeonatoId));
     }
+
+    @PostMapping("/{categoriaId}/atleta/{atletaId}/inscrever")
+    @Operation(summary = "Inscrever atleta em categoria", description = "Inscreve um atleta em uma categoria do mesmo campeonato")
+    public ResponseEntity<Void> inscreverAtletaEmCategoria(
+            @Parameter(description = "UUID da categoria") @PathVariable UUID categoriaId,
+            @Parameter(description = "UUID do atleta") @PathVariable UUID atletaId) {
+        categoriaService.inscreveAtletaEmCategoria(categoriaId, atletaId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{categoriaId}/atleta/{atletaId}/remover-inscricao")
+    @Operation(summary = "Remover inscrição de atleta em categoria", description = "Remove a inscrição de um atleta em uma categoria")
+    public ResponseEntity<Void> removerInscricaoAtletaEmCategoria(
+            @Parameter(description = "UUID da categoria") @PathVariable UUID categoriaId,
+            @Parameter(description = "UUID do atleta") @PathVariable UUID atletaId) {
+        categoriaService.removeInscricaoDeAtletaEmCategoria(categoriaId, atletaId);
+        return ResponseEntity.noContent().build();
+    }
 }

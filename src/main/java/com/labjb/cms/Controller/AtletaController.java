@@ -50,6 +50,15 @@ public class AtletaController {
         return ResponseEntity.ok(atletaService.listarAtletas(filtro, campeonatoId, pageable));
     }
 
+    @GetMapping("/categoria/{categoriaId}")
+    @Operation(summary = "Listar atletas por categoria", description = "Lista atletas paginados de uma categoria específica, ordenados por apelido e nome, com filtro opcional")
+    public ResponseEntity<Page<AtletaDto>> listarAtletasPorCategoria(
+            @Parameter(description = "Filtro para busca por nome, apelido ou graduação") @RequestParam(required = false) String filtro,
+            @Parameter(description = "UUID da categoria") @PathVariable UUID categoriaId,
+            @PageableDefault(size = 10, page = 0) Pageable pageable) {
+        return ResponseEntity.ok(atletaService.listarAtletasPorCategoria(filtro, categoriaId, pageable));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Visualizar atleta", description = "Visualiza os dados de um atleta específico")
     public ResponseEntity<AtletaDto> visualizarAtleta(

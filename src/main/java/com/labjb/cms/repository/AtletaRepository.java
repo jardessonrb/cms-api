@@ -26,4 +26,17 @@ public interface AtletaRepository extends JpaRepository<Atleta, Long> {
             ORDER BY a.apelido ASC, a.nome ASC
             """)
     Page<Atleta> findAllWithFilter(@Param("filtro") String filtro, @Param("campeonatoId") UUID campeonatoId, Pageable pageable);
+
+    @Query(value = """
+            SELECT a FROM Atleta a
+            JOIN a.inscricoesCategoria ic
+            WHERE ic.categoria.uuid = :categoriaId
+              AND (:filtro IS NULL OR
+                   LOWER(a.nome)     LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
+                   LOWER(a.apelido)  LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
+                   LOWER(a.responsavel)  LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
+                   LOWER(a.graduacao)LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')))
+            ORDER BY a.apelido ASC, a.nome ASC
+            """)
+    Page<Atleta> findAllByCategoriaWithFilter(@Param("filtro") String filtro, @Param("categoriaId") UUID categoriaId, Pageable pageable);
 }
