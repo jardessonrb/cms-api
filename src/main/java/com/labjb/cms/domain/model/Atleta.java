@@ -1,0 +1,44 @@
+package com.labjb.cms.domain.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.util.Set;
+
+@Builder
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "tb_atleta")
+public class Atleta extends BaseEntity {
+
+    private String nome;
+    private String apelido;
+    private String responsavel;
+    private LocalDate dataNascimento;
+    private String cidade;
+    private String grupo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "campeonato_id")
+    private Campeonato campeonato;
+
+    @OneToMany(mappedBy = "atleta")
+    private Set<InscricaoCategoria> inscricoesCategoria;
+
+    @ManyToMany(mappedBy = "atletas")
+    private Set<Fase> fases;
+
+    @ManyToMany
+    @JoinTable(
+            name = "tb_registro_disputa_atleta",
+            joinColumns = @JoinColumn(name = "atleta_id"),
+            inverseJoinColumns = @JoinColumn(name = "registro_disputa_id")
+    )
+    private Set<RegistroDisputa> registrosDisputa;
+}

@@ -1,0 +1,41 @@
+package com.labjb.cms.domain.model;
+
+import com.labjb.cms.domain.enums.CriterioEntrada;
+import com.labjb.cms.domain.enums.SituacaoFaseEnum;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Set;
+
+@Builder
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "tb_fase")
+public class Fase extends BaseEntity {
+
+    private String nome;
+
+    @Enumerated(EnumType.STRING)
+    private CriterioEntrada criterio;
+
+    @ManyToOne
+    @JoinColumn(name = "categoria_id")
+    private Categoria categoria;
+
+    @Enumerated(EnumType.STRING)
+    private SituacaoFaseEnum situacao;
+
+    @ManyToMany
+    @JoinTable(
+        name = "tb_fase_atleta",
+        joinColumns = @JoinColumn(name = "fase_id"),
+        inverseJoinColumns = @JoinColumn(name = "atleta_id")
+    )
+    private Set<Atleta> atletas;
+
+}
