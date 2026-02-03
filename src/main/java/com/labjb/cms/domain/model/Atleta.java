@@ -23,6 +23,7 @@ public class Atleta extends BaseEntity {
     private LocalDate dataNascimento;
     private String cidade;
     private String grupo;
+    private String graduacao;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "campeonato_id")
