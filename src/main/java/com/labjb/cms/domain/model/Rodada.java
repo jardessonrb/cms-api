@@ -22,6 +22,10 @@ public class Rodada extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private SituacaoRodadaEnum situacao;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fase_id")
+    private Fase fase;
+
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "rodada_id")
     private Set<Disputa> disputas;
