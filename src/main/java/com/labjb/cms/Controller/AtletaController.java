@@ -59,6 +59,15 @@ public class AtletaController {
         return ResponseEntity.ok(atletaService.listarAtletasPorCategoria(filtro, categoriaId, pageable));
     }
 
+    @GetMapping("/fase/{faseId}")
+    @Operation(summary = "Listar atletas por fase", description = "Lista atletas paginados de uma fase específica, ordenados por apelido e nome, com filtro opcional")
+    public ResponseEntity<Page<AtletaDto>> listarAtletasPorFase(
+            @Parameter(description = "Filtro para busca por nome, apelido ou graduação") @RequestParam(required = false) String filtro,
+            @Parameter(description = "UUID da fase") @PathVariable UUID faseId,
+            @PageableDefault(size = 10, page = 0) Pageable pageable) {
+        return ResponseEntity.ok(atletaService.listarAtletasPorFase(filtro, faseId, pageable));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Visualizar atleta", description = "Visualiza os dados de um atleta específico")
     public ResponseEntity<AtletaDto> visualizarAtleta(

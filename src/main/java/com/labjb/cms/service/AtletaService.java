@@ -57,6 +57,11 @@ public class AtletaService {
                 .map(atletaMapper::toDto);
     }
 
+    public Page<AtletaDto> listarAtletasPorFase(String filtro, UUID faseId, Pageable pageable) {
+        return atletaRepository.findAllByFaseWithFilter(filtro, faseId, pageable)
+                .map(atletaMapper::toDto);
+    }
+
     public AtletaDto visualizarAtleta(UUID id) {
         return atletaRepository.findByUuid(id)
                 .map(atletaMapper::toDto)

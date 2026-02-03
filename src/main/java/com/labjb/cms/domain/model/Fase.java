@@ -21,7 +21,7 @@ public class Fase extends BaseEntity {
     private String nome;
 
     @Enumerated(EnumType.STRING)
-    private CriterioEntrada criterio;
+    private CriterioEntrada criterioEntrada;
 
     @ManyToOne
     @JoinColumn(name = "categoria_id")
@@ -29,6 +29,10 @@ public class Fase extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private SituacaoFaseEnum situacao;
+
+    private Integer ordem;
+
+    private Integer quantidadeAtletas;
 
     @ManyToMany
     @JoinTable(
