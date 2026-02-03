@@ -7,6 +7,7 @@ import lombok.Getter;
 @Getter
 public enum SituacaoRodadaEnum {
 
+    CRIADA("Criada"),
     INICIADA("Iniciada"),
     FINALIZADA("Finalizada");
 

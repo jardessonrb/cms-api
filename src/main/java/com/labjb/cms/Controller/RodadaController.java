@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -48,6 +49,14 @@ public class RodadaController {
             @Parameter(description = "Filtro para busca por nome da fase") @RequestParam(required = false) String filtro,
             @PageableDefault(size = 10, page = 0) Pageable pageable) {
         return ResponseEntity.ok(rodadaService.listarRodadasPorFase(faseId, filtro, pageable));
+    }
+
+    @PostMapping("/fase/{faseId}/gerar-rodadas")
+    @Operation(summary = "Gerar múltiplas rodadas para uma fase", description = "Cria múltiplas rodadas para uma fase específica")
+    public ResponseEntity<List<RodadaDto>> geraRodadasParaFase(
+            @Parameter(description = "UUID da fase") @PathVariable UUID faseId,
+            @RequestBody List<RodadaForm> rodadasForms) {
+        return ResponseEntity.ok(rodadaService.geraRodadasParaFase(faseId, rodadasForms));
     }
 
     @PatchMapping("/{id}/finalizar")
