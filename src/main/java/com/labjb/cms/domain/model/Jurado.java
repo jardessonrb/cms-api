@@ -24,4 +24,8 @@ public class Jurado extends BaseEntity {
 
     @OneToMany(mappedBy = "jurado", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Nota> notas;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "campeonato_id")
+    private Campeonato campeonato;
 }

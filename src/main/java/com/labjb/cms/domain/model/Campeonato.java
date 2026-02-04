@@ -29,4 +29,7 @@ public class Campeonato extends BaseEntity {
 
     @OneToMany(mappedBy = "campeonato", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Categoria> categorias;
+
+    @OneToMany(mappedBy = "campeonato", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Jurado> jurados;
 }
