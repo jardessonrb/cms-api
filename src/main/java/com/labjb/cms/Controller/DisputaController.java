@@ -1,8 +1,10 @@
 package com.labjb.cms.Controller;
 
 import com.labjb.cms.domain.dto.in.DisputaForm;
+import com.labjb.cms.domain.dto.in.RegistrarNotasForm;
 import com.labjb.cms.domain.dto.out.DisputaDto;
 import com.labjb.cms.service.DisputaService;
+import com.labjb.cms.service.NotaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +26,7 @@ import java.util.UUID;
 public class DisputaController {
 
     private final DisputaService disputaService;
+    private final NotaService notaService;
 
     @GetMapping("/rodada/{rodadaId}")
     @Operation(summary = "Listar disputas por rodada", description = "Lista disputas de uma rodada específica ordenadas por data de criação descendente")
@@ -49,5 +52,13 @@ public class DisputaController {
         DisputaDto disputaDto = disputaService.criarDisputaManual(rodadaId, disputaForm);
         URI uri = uriComponentsBuilder.path("/disputa/{id}").buildAndExpand(disputaDto.id()).toUri();
         return ResponseEntity.created(uri).body(disputaDto);
+    }
+
+    @PostMapping("/{id}/registrar-notas")
+    @Operation(summary = "Registrar notas da disputa", description = "Registra as notas dos jurados para os atletas de uma disputa")
+    public ResponseEntity<DisputaDto> registrarNotas(
+            @Parameter(description = "UUID da disputa") @PathVariable UUID id,
+            @RequestBody RegistrarNotasForm registrarNotasForm) {
+        return ResponseEntity.ok(notaService.registrarNotas(id, registrarNotasForm));
     }
 }

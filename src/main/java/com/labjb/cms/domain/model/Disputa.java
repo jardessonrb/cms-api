@@ -15,7 +15,7 @@ import java.util.Set;
 @Table(name = "tb_disputa")
 public class Disputa extends BaseEntity {
 
-    @Enumerated
+    @Enumerated(EnumType.STRING)
     private SituacaoDisputaEnum situacao;
 
     @ManyToOne(fetch = FetchType.LAZY)

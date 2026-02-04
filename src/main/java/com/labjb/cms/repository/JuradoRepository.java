@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,15 +17,7 @@ public interface JuradoRepository extends JpaRepository<Jurado, Long> {
 
     Optional<Jurado> findByUuid(UUID uuid);
 
-    @Query(value = """
-            SELECT j FROM Jurado j
-            WHERE (:filtro IS NULL OR
-                   LOWER(j.nome)    LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
-                   LOWER(j.apelido) LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
-                   LOWER(j.grupo)   LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')))
-            ORDER BY j.criadoEm DESC
-            """)
-    Page<Jurado> findAllWithFilter(@Param("filtro") String filtro, Pageable pageable);
+    List<Jurado> findByUuidIn(List<UUID> uuids);
 
     @Query(value = """
             SELECT j FROM Jurado j
