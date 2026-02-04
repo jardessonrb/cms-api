@@ -1,0 +1,53 @@
+package com.labjb.cms.Controller;
+
+import com.labjb.cms.domain.dto.in.DisputaForm;
+import com.labjb.cms.domain.dto.out.DisputaDto;
+import com.labjb.cms.service.DisputaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
+import java.util.UUID;
+
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/disputa")
+@Tag(name = "Disputas", description = "Operações relacionadas as disputas das rodadas")
+public class DisputaController {
+
+    private final DisputaService disputaService;
+
+    @GetMapping("/rodada/{rodadaId}")
+    @Operation(summary = "Listar disputas por rodada", description = "Lista disputas de uma rodada específica ordenadas por data de criação descendente")
+    public ResponseEntity<Page<DisputaDto>> listarDisputasPorRodada(
+            @Parameter(description = "UUID da rodada") @PathVariable UUID rodadaId,
+            @PageableDefault(size = 10, page = 0) Pageable pageable) {
+        return ResponseEntity.ok(disputaService.listarDisputasPorRodada(rodadaId, pageable));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar disputa por UUID", description = "Busca uma disputa específica pelo seu UUID")
+    public ResponseEntity<DisputaDto> buscarDisputaPorUuid(
+            @Parameter(description = "UUID da disputa") @PathVariable UUID id) {
+        return ResponseEntity.ok(disputaService.buscarDisputaPorUuid(id));
+    }
+
+    @PostMapping("/rodada/{rodadaId}")
+    @Operation(summary = "Criar disputa manual", description = "Cria uma nova disputa manual para uma rodada específica")
+    public ResponseEntity<DisputaDto> criarDisputaManual(
+            @Parameter(description = "UUID da rodada") @PathVariable UUID rodadaId,
+            @RequestBody DisputaForm disputaForm,
+            UriComponentsBuilder uriComponentsBuilder) {
+        DisputaDto disputaDto = disputaService.criarDisputaManual(rodadaId, disputaForm);
+        URI uri = uriComponentsBuilder.path("/disputa/{id}").buildAndExpand(disputaDto.id()).toUri();
+        return ResponseEntity.created(uri).body(disputaDto);
+    }
+}
