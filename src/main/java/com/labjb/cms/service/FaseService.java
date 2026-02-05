@@ -2,6 +2,7 @@ package com.labjb.cms.service;
 
 import com.labjb.cms.domain.dto.in.FaseForm;
 import com.labjb.cms.domain.dto.out.FaseDto;
+import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
 import com.labjb.cms.domain.enums.CriterioEntrada;
 import com.labjb.cms.domain.enums.SituacaoFaseEnum;
 import com.labjb.cms.domain.model.Fase;
@@ -16,6 +17,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -37,7 +40,7 @@ public class FaseService {
         Fase fase = faseMapper.toEntity(faseForm);
         fase.setCategoria(categoria);
         fase.setSituacao(SituacaoFaseEnum.CRIADA);
-        fase.setOrdem(Math.toIntExact(faseRepository.countByCategoria(categoria) + 1));
+        fase.setOrdem(Math.toIntExact(faseRepository.findMaxOrdemByCategoriaUuid(categoria.getUuid()) + 1));
 
         // Se critério for TODOS, adicionar todos os atletas da categoria
         if (faseForm.criterioEntrada() == CriterioEntrada.TODOS) {
@@ -67,5 +70,73 @@ public class FaseService {
     public Page<FaseDto> listarFasesPorCategoria(UUID categoriaId, Pageable pageable) {
         return faseRepository.findByCategoriaUuidOrderByOrdemDesc(categoriaId, pageable)
                 .map(faseMapper::toDto);
+    }
+
+    public List<PontuacaoParcialDto> buscarPontuacaoParcial(UUID faseId) {
+        Fase fase = faseRepository.findByUuid(faseId)
+                .orElseThrow(() -> new RuntimeException("Fase não encontrada"));
+        
+        List<Object[]> results = faseRepository.findPontuacaoParcialByFaseId(fase.getId());
+        List<PontuacaoParcialDto> pontuacoes = new ArrayList<>();
+        
+        // Primeiro, criar todos os DTOs sem posição
+        for (Object[] row : results) {
+            pontuacoes.add(new PontuacaoParcialDto(
+                (String) row[0],  // categoria
+                (String) row[1],  // fase
+                (String) row[2],  // competidor
+                ((Number) row[3]).longValue(),  // partidas
+                ((Number) row[4]).longValue(),  // partidas_concluidas
+                (java.math.BigDecimal) row[5],  // pontuacao_por_dupla
+                (java.math.BigDecimal) row[6],  // pontuacao_por_atleta
+                (java.math.BigDecimal) row[7],  // total_fase
+                null  // posicao será calculada abaixo
+            ));
+        }
+        
+        // Agora calcular posições e criar novos objetos com posição
+        List<PontuacaoParcialDto> resultadoFinal = new ArrayList<>();
+        if (!pontuacoes.isEmpty()) {
+            int posicaoAtual = 1;
+            
+            // Primeiro elemento sempre recebe posição 1
+            PontuacaoParcialDto primeiro = pontuacoes.get(0);
+            resultadoFinal.add(new PontuacaoParcialDto(
+                primeiro.categoria(), primeiro.fase(), primeiro.competidor(),
+                primeiro.partidas(), primeiro.partidasConcluidas(), 
+                primeiro.notaIndividual(), primeiro.notaDupla(), primeiro.total(),
+                posicaoAtual
+            ));
+            
+            // Demais elementos
+            for (int i = 1; i < pontuacoes.size(); i++) {
+                PontuacaoParcialDto atual = pontuacoes.get(i);
+                PontuacaoParcialDto anterior = pontuacoes.get(i - 1);
+                
+                BigDecimal totalAnterior = anterior.total();
+                BigDecimal totalAtual = atual.total();
+                
+                if (totalAtual.compareTo(totalAnterior) == 0) {
+                    // Mesmo total, mesma posição
+                    resultadoFinal.add(new PontuacaoParcialDto(
+                        atual.categoria(), atual.fase(), atual.competidor(),
+                        atual.partidas(), atual.partidasConcluidas(), 
+                        atual.notaIndividual(), atual.notaDupla(), atual.total(),
+                        posicaoAtual
+                    ));
+                } else {
+                    // Total diferente, nova posição
+                    posicaoAtual = i + 1;
+                    resultadoFinal.add(new PontuacaoParcialDto(
+                        atual.categoria(), atual.fase(), atual.competidor(),
+                        atual.partidas(), atual.partidasConcluidas(), 
+                        atual.notaIndividual(), atual.notaDupla(), atual.total(),
+                        posicaoAtual
+                    ));
+                }
+            }
+        }
+        
+        return resultadoFinal;
     }
 }

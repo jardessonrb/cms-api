@@ -2,6 +2,7 @@ package com.labjb.cms.Controller;
 
 import com.labjb.cms.domain.dto.in.FaseForm;
 import com.labjb.cms.domain.dto.out.FaseDto;
+import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
 import com.labjb.cms.service.FaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.List;
 import java.net.URI;
 import java.util.UUID;
 
@@ -47,5 +49,12 @@ public class FaseController {
             @Parameter(description = "UUID da categoria") @PathVariable UUID categoriaId,
             @PageableDefault(size = 10, page = 0) Pageable pageable) {
         return ResponseEntity.ok(faseService.listarFasesPorCategoria(categoriaId, pageable));
+    }
+
+    @GetMapping("/{faseId}/pontuacao-parcial")
+    @Operation(summary = "Visualizar pontuação parcial", description = "Retorna a pontuação parcial dos atletas em uma fase específica")
+    public ResponseEntity<List<PontuacaoParcialDto>> visualizarPontuacaoParcial(
+            @Parameter(description = "UUID da fase") @PathVariable UUID faseId) {
+        return ResponseEntity.ok(faseService.buscarPontuacaoParcial(faseId));
     }
 }

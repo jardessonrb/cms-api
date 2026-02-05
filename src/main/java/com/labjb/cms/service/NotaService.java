@@ -11,6 +11,7 @@ import com.labjb.cms.repository.*;
 import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.NotaMapper;
 import com.labjb.cms.shared.mapper.DisputaMapper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +67,7 @@ public class NotaService {
         RegistroDisputa registroDisputa = registros.stream()
                 .filter(rd -> rd.getAtleta().getUuid().equals(atletaNotas.atletaId()))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Atleta não encontrado na disputa"));
+                .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado na disputa"));
 
         for (NotaForm notaForm : atletaNotas.notas()) {
             // Validar notas (0 a 5)
