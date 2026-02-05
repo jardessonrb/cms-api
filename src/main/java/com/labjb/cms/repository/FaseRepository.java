@@ -48,6 +48,7 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
             	group by ta.id
             )
             select
+            ta.id as atleta_id,
             npr.categoria,
             npr.fase,
             (ta.apelido || ' - '|| ta.grupo) as atleta, 
@@ -59,7 +60,7 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
             from notas_por_rodada npr
             join tb_atleta ta on npr.atleta_id = ta.id
             join partidas_por_atleta ppa on ppa.atleta_id = ta.id
-            group by npr.categoria, npr.fase, ta.apelido, ta.grupo, ppa.partidas, ppa.partidas_concluidas
+            group by ta.id, npr.categoria, npr.fase, ta.apelido, ta.grupo, ppa.partidas, ppa.partidas_concluidas
             order by total_fase desc
             """, 
             nativeQuery = true)

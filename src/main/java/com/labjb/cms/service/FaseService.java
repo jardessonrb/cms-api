@@ -82,14 +82,15 @@ public class FaseService {
         // Primeiro, criar todos os DTOs sem posição
         for (Object[] row : results) {
             pontuacoes.add(new PontuacaoParcialDto(
-                (String) row[0],  // categoria
-                (String) row[1],  // fase
-                (String) row[2],  // competidor
-                ((Number) row[3]).longValue(),  // partidas
-                ((Number) row[4]).longValue(),  // partidas_concluidas
-                (java.math.BigDecimal) row[5],  // pontuacao_por_dupla
-                (java.math.BigDecimal) row[6],  // pontuacao_por_atleta
-                (java.math.BigDecimal) row[7],  // total_fase
+                ((Number) row[0]).longValue(),  // atletaId
+                (String) row[1],  // categoria
+                (String) row[2],  // fase
+                (String) row[3],  // competidor
+                ((Number) row[4]).longValue(),  // partidas
+                ((Number) row[5]).longValue(),  // partidas_concluidas
+                (java.math.BigDecimal) row[6],  // pontuacao_por_dupla
+                (java.math.BigDecimal) row[7],  // pontuacao_por_atleta
+                (java.math.BigDecimal) row[8],  // total_fase
                 null  // posicao será calculada abaixo
             ));
         }
@@ -102,6 +103,7 @@ public class FaseService {
             // Primeiro elemento sempre recebe posição 1
             PontuacaoParcialDto primeiro = pontuacoes.get(0);
             resultadoFinal.add(new PontuacaoParcialDto(
+                primeiro.atletaId(),
                 primeiro.categoria(), primeiro.fase(), primeiro.competidor(),
                 primeiro.partidas(), primeiro.partidasConcluidas(), 
                 primeiro.notaIndividual(), primeiro.notaDupla(), primeiro.total(),
@@ -119,6 +121,7 @@ public class FaseService {
                 if (totalAtual.compareTo(totalAnterior) == 0) {
                     // Mesmo total, mesma posição
                     resultadoFinal.add(new PontuacaoParcialDto(
+                        atual.atletaId(),
                         atual.categoria(), atual.fase(), atual.competidor(),
                         atual.partidas(), atual.partidasConcluidas(), 
                         atual.notaIndividual(), atual.notaDupla(), atual.total(),
@@ -128,6 +131,7 @@ public class FaseService {
                     // Total diferente, nova posição
                     posicaoAtual = i + 1;
                     resultadoFinal.add(new PontuacaoParcialDto(
+                        atual.atletaId(),
                         atual.categoria(), atual.fase(), atual.competidor(),
                         atual.partidas(), atual.partidasConcluidas(), 
                         atual.notaIndividual(), atual.notaDupla(), atual.total(),
