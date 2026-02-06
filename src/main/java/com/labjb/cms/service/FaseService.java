@@ -3,6 +3,8 @@ package com.labjb.cms.service;
 import com.labjb.cms.domain.dto.in.FaseForm;
 import com.labjb.cms.domain.dto.out.FaseDto;
 import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
+import com.labjb.cms.domain.dto.out.ValidacaoCorteDto;
+import com.labjb.cms.domain.dto.out.ResultadoFaseAtletaDto;
 import com.labjb.cms.domain.enums.CriterioEntrada;
 import com.labjb.cms.domain.enums.SituacaoFaseEnum;
 import com.labjb.cms.domain.model.Fase;
@@ -18,14 +20,12 @@ import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.FaseMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -56,6 +56,21 @@ public class FaseService {
             List<Atleta> atletasCategoria = atletaRepository.findAllByCategoriaWithFilter(null, faseForm.categoriaId(), null)
                     .getContent();
             fase.setAtletas(atletasCategoria.stream().collect(Collectors.toSet()));
+        } else if (faseForm.criterioEntrada() == CriterioEntrada.N_PRIMEIROS) {
+            // Para N_PRIMEIROS, validar que existe fase anterior e está finalizada
+            if (faseForm.faseAnterior() == null) {
+                throw new RegraNegocioException("Critério N_PRIMEIROS exige uma fase anterior");
+            }
+            
+            Fase faseAnterior = faseRepository.findByUuid(faseForm.faseAnterior())
+                    .orElseThrow(() -> new EntityNotFoundException("Fase anterior não encontrada"));
+            
+            if (faseAnterior.getSituacao() != SituacaoFaseEnum.FINALIZADA) {
+                throw new RegraNegocioException("Fase anterior deve estar FINALIZADA para usar critério N_PRIMEIROS");
+            }
+            
+            // TODO: Implementar lógica para buscar os N primeiros atletas da fase anterior
+            // Por enquanto, não adiciona atletas (será feito em outro método)
         }
 
         return faseMapper.toDto(faseRepository.save(fase));
@@ -202,5 +217,65 @@ public class FaseService {
         Fase faseSalva = faseRepository.save(fase);
 
         return faseMapper.toDto(faseSalva);
+    }
+
+    public ValidacaoCorteDto validaCorte(UUID faseAnteriorUuid, Integer quantidadeAtletas) {
+        if(quantidadeAtletas < 1){
+            throw new RegraNegocioException("Quantidade de atletas deve ser positiva.");
+        }
+        // Validar existência da fase anterior
+        Fase faseAnterior = faseRepository.findByUuid(faseAnteriorUuid)
+                .orElseThrow(() -> new EntityNotFoundException("Fase anterior não encontrada"));
+
+        // Verificar se a fase anterior está FINALIZADA
+        if (faseAnterior.getSituacao() != SituacaoFaseEnum.FINALIZADA) {
+            throw new RegraNegocioException("Fase anterior deve estar FINALIZADA para validar o corte");
+        }
+
+        Pair<List<ResultadoFaseAtleta>, List<ResultadoFaseAtleta>> atletas = separaAtletasClassificadosEEmpatadosPorQuantidade(faseAnteriorUuid, quantidadeAtletas);
+
+        List<ResultadoFaseAtletaDto> atletasEmpatados = atletas
+                .getRight()
+                .stream()
+                .map(r -> new ResultadoFaseAtletaDto(r.getId(), r.getAtleta().getUuid(),
+                        r.getAtleta().getApelido() + " - " + r.getAtleta().getGrupo(), r.getNotaIndividual(),
+                        r.getNotaDupla(), r.getTotal(), r.getPosicao()))
+                .toList();
+
+        return new ValidacaoCorteDto(atletasEmpatados.size(), atletasEmpatados);
+    }
+
+    private Pair<List<ResultadoFaseAtleta>, List<ResultadoFaseAtleta>> separaAtletasClassificadosEEmpatadosPorQuantidade(UUID faseAnteriorUuid, Integer quantidadeAtletas) {
+        // Buscar resultados da fase anterior ordenados por posição
+        List<ResultadoFaseAtleta> resultados = resultadoFaseAtletaRepository
+                .findByFaseUuidOrderByTotalDesc(faseAnteriorUuid);
+
+        if(quantidadeAtletas > resultados.size()){
+            throw new RegraNegocioException("A quantidade informada é maior que a quantidade de atletas na fase");
+        }
+
+        // Buscar os N primeiros atletas por pontuação (ordenados por posição)
+        Double totalDoUltimoAtletaDaQuantidade = resultados.stream()
+                .limit(quantidadeAtletas)
+                .toList()
+                .getLast()
+                .getTotal();
+
+        List<ResultadoFaseAtleta> atletasNaProximaFaseDireto = new ArrayList<>();
+        List<ResultadoFaseAtleta> candidatosAProximaFase = new ArrayList<>();
+        for(ResultadoFaseAtleta resultado : resultados){
+            if(resultado.getTotal() > totalDoUltimoAtletaDaQuantidade){
+                atletasNaProximaFaseDireto.add(resultado);
+            }else if(resultado.getTotal().equals(totalDoUltimoAtletaDaQuantidade)){
+                candidatosAProximaFase.add(resultado);
+            }
+        }
+
+        if((candidatosAProximaFase.size() + atletasNaProximaFaseDireto.size()) == quantidadeAtletas){
+            atletasNaProximaFaseDireto.addAll(candidatosAProximaFase);
+            return Pair.of(atletasNaProximaFaseDireto, new ArrayList<>());
+        }
+
+        return Pair.of(atletasNaProximaFaseDireto, candidatosAProximaFase);
     }
 }

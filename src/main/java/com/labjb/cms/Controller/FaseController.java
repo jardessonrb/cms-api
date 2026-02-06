@@ -3,10 +3,12 @@ package com.labjb.cms.Controller;
 import com.labjb.cms.domain.dto.in.FaseForm;
 import com.labjb.cms.domain.dto.out.FaseDto;
 import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
+import com.labjb.cms.domain.dto.out.ValidacaoCorteDto;
 import com.labjb.cms.service.FaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -63,5 +65,13 @@ public class FaseController {
     public ResponseEntity<FaseDto> finalizarFase(
             @Parameter(description = "UUID da fase") @PathVariable UUID faseId) {
         return ResponseEntity.ok(faseService.finalizarFase(faseId));
+    }
+
+    @PostMapping("/validar-corte")
+    @Operation(summary = "Validar corte de fase", description = "Valida se há empates na posição de corte para criação de nova fase")
+    public ResponseEntity<ValidacaoCorteDto> validarCorte(
+            @Parameter(description = "UUID da fase anterior") @RequestParam UUID faseAnterior,
+            @Parameter(description = "Quantidade de atletas para o corte") @RequestParam Integer quantidadeAtletas) {
+        return ResponseEntity.ok(faseService.validaCorte(faseAnterior, quantidadeAtletas));
     }
 }

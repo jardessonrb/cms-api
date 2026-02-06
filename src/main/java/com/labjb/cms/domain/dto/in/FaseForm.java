@@ -7,5 +7,6 @@ public record FaseForm(
         String nome,
         CriterioEntrada criterioEntrada,
         Integer quantidadeAtletas,
-        UUID categoriaId
+        UUID categoriaId,
+        UUID faseAnterior
 ) {}
