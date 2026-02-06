@@ -57,4 +57,11 @@ public class FaseController {
             @Parameter(description = "UUID da fase") @PathVariable UUID faseId) {
         return ResponseEntity.ok(faseService.buscarPontuacaoParcial(faseId));
     }
+
+    @PostMapping("/{faseId}/finalizar")
+    @Operation(summary = "Finalizar fase", description = "Finaliza uma fase e salva os resultados dos atletas")
+    public ResponseEntity<FaseDto> finalizarFase(
+            @Parameter(description = "UUID da fase") @PathVariable UUID faseId) {
+        return ResponseEntity.ok(faseService.finalizarFase(faseId));
+    }
 }

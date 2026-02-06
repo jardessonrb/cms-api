@@ -44,4 +44,7 @@ public class Atleta extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "registro_disputa_id")
     )
     private Set<RegistroDisputa> registrosDisputa;
+
+    @OneToMany(mappedBy = "atleta")
+    private Set<ResultadoFaseAtleta> resultadosFase;
 }

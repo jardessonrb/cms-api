@@ -8,10 +8,15 @@ import com.labjb.cms.domain.enums.SituacaoFaseEnum;
 import com.labjb.cms.domain.model.Fase;
 import com.labjb.cms.domain.model.Categoria;
 import com.labjb.cms.domain.model.Atleta;
+import com.labjb.cms.domain.model.ResultadoFaseAtleta;
 import com.labjb.cms.repository.FaseRepository;
 import com.labjb.cms.repository.CategoriaRepository;
 import com.labjb.cms.repository.AtletaRepository;
+import com.labjb.cms.repository.ResultadoFaseAtletaRepository;
+import com.labjb.cms.repository.RodadaRepository;
+import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.FaseMapper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,8 +24,10 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -31,6 +38,8 @@ public class FaseService {
     private final FaseRepository faseRepository;
     private final CategoriaRepository categoriaRepository;
     private final AtletaRepository atletaRepository;
+    private final ResultadoFaseAtletaRepository resultadoFaseAtletaRepository;
+    private final RodadaRepository rodadaRepository;
     private final FaseMapper faseMapper;
 
     public FaseDto criaFase(FaseForm faseForm) {
@@ -88,9 +97,9 @@ public class FaseService {
                 (String) row[3],  // competidor
                 ((Number) row[4]).longValue(),  // partidas
                 ((Number) row[5]).longValue(),  // partidas_concluidas
-                (java.math.BigDecimal) row[6],  // pontuacao_por_dupla
-                (java.math.BigDecimal) row[7],  // pontuacao_por_atleta
-                (java.math.BigDecimal) row[8],  // total_fase
+                ((Number) row[6]).doubleValue(),  // pontuacao_por_dupla
+                ((Number) row[7]).doubleValue(),  // pontuacao_por_atleta
+                ((Number) row[8]).doubleValue(),  // total_fase
                 null  // posicao será calculada abaixo
             ));
         }
@@ -115,10 +124,10 @@ public class FaseService {
                 PontuacaoParcialDto atual = pontuacoes.get(i);
                 PontuacaoParcialDto anterior = pontuacoes.get(i - 1);
                 
-                BigDecimal totalAnterior = anterior.total();
-                BigDecimal totalAtual = atual.total();
+                Double totalAnterior = anterior.total();
+                Double totalAtual = atual.total();
                 
-                if (totalAtual.compareTo(totalAnterior) == 0) {
+                if (totalAtual.equals(totalAnterior)) {
                     // Mesmo total, mesma posição
                     resultadoFinal.add(new PontuacaoParcialDto(
                         atual.atletaId(),
@@ -142,5 +151,56 @@ public class FaseService {
         }
         
         return resultadoFinal;
+    }
+
+    public FaseDto finalizarFase(UUID faseId) {
+        // Validar existência da fase
+        Fase fase = faseRepository.findByUuid(faseId)
+                .orElseThrow(() -> new EntityNotFoundException("Fase não encontrada"));
+
+        // Verificar se a fase está INICIADA
+        if (fase.getSituacao() != SituacaoFaseEnum.INICIADA) {
+            throw new RegraNegocioException("Fase deve estar com situação INICIADA para ser finalizada");
+        }
+
+        // Verificar se todas as rodadas estão FINALIZADAS
+        Long rodadasNaoFinalizadas = rodadaRepository.countRodadasNaoFinalizadasByFaseUuid(faseId);
+        if (rodadasNaoFinalizadas > 0) {
+            throw new RegraNegocioException("Todas as rodadas devem estar FINALIZADAS para finalizar a fase");
+        }
+
+        // Buscar pontuação parcial
+        List<PontuacaoParcialDto> pontuacoes = buscarPontuacaoParcial(faseId);
+
+        // Criar mapa com chave sendo o ID do atleta
+        Map<Long, PontuacaoParcialDto> pontuacaoMap = pontuacoes.stream()
+                .collect(Collectors.toMap(PontuacaoParcialDto::atletaId, dto -> dto));
+
+        // Limpar resultados existentes (se houver)
+        resultadoFaseAtletaRepository.deleteByFaseUuid(faseId);
+
+        // Salvar resultados para cada atleta da fase
+        for (Atleta atleta : fase.getAtletas()) {
+            PontuacaoParcialDto pontuacao = pontuacaoMap.get(atleta.getId());
+            
+            if (pontuacao != null) {
+                ResultadoFaseAtleta resultado = ResultadoFaseAtleta.builder()
+                        .fase(fase)
+                        .atleta(atleta)
+                        .notaIndividual(pontuacao.notaIndividual())
+                        .notaDupla(pontuacao.notaDupla())
+                        .total(pontuacao.total())
+                        .posicao(pontuacao.posicao())
+                        .build();
+                
+                resultadoFaseAtletaRepository.save(resultado);
+            }
+        }
+
+        // Atualizar situação da fase para FINALIZADA
+        fase.setSituacao(SituacaoFaseEnum.FINALIZADA);
+        Fase faseSalva = faseRepository.save(fase);
+
+        return faseMapper.toDto(faseSalva);
     }
 }

@@ -20,4 +20,7 @@ public interface RodadaRepository extends JpaRepository<Rodada, Long> {
 
     @Query("SELECT r FROM Rodada r WHERE r.fase.uuid = :faseId AND (:filtro IS NULL OR LOWER(r.fase.nome) LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%'))) ORDER BY r.criadoEm DESC")
     Page<Rodada> findByFaseUuidWithFilter(@Param("faseId") UUID faseId, @Param("filtro") String filtro, Pageable pageable);
+
+    @Query("SELECT COUNT(r) FROM Rodada r WHERE r.fase.uuid = :faseId AND r.situacao != 'FINALIZADA'")
+    Long countRodadasNaoFinalizadasByFaseUuid(@Param("faseId") UUID faseId);
 }

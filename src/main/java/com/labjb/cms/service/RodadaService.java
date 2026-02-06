@@ -7,6 +7,7 @@ import com.labjb.cms.domain.enums.SituacaoDisputaEnum;
 import com.labjb.cms.domain.enums.SituacaoRodadaEnum;
 import com.labjb.cms.domain.model.*;
 import com.labjb.cms.repository.AtletaRepository;
+import com.labjb.cms.repository.DisputaRepository;
 import com.labjb.cms.repository.FaseRepository;
 import com.labjb.cms.repository.RodadaRepository;
 import com.labjb.cms.shared.errors.exception.RegraNegocioException;
@@ -28,6 +29,7 @@ public class RodadaService {
     private final RodadaRepository rodadaRepository;
     private final FaseRepository faseRepository;
     private final AtletaRepository atletaRepository;
+    private final DisputaRepository disputaRepository;
     private final RodadaMapper rodadaMapper;
     private final GeradorDeDisputas geradorDeDisputas;
 
@@ -130,6 +132,12 @@ public class RodadaService {
     public RodadaDto finalizarRodada(UUID id) {
         Rodada rodada = rodadaRepository.findByUuid(id)
                 .orElseThrow(() -> new RuntimeException("Rodada não encontrada"));
+
+        // Verificar se todas as disputas associadas estão CONCLUIDA
+        Long disputasNaoConcluidas = disputaRepository.countDisputasNaoConcluidasByRodadaUuid(id);
+        if (disputasNaoConcluidas > 0) {
+            throw new RegraNegocioException("Todas as disputas devem estar CONCLUIDA para finalizar a rodada");
+        }
 
         rodada.setSituacao(SituacaoRodadaEnum.FINALIZADA);
 

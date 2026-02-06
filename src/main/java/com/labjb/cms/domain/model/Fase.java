@@ -47,4 +47,7 @@ public class Fase extends BaseEntity {
     @OneToMany(mappedBy = "fase")
     private Set<Rodada> rodadas;
 
+    @OneToMany(mappedBy = "fase")
+    private Set<ResultadoFaseAtleta> resultados;
+
 }

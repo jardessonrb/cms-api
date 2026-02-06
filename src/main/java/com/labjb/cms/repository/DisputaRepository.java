@@ -18,4 +18,7 @@ public interface DisputaRepository extends JpaRepository<Disputa, Long> {
 
     @Query("SELECT d FROM Disputa d WHERE d.rodada.uuid = :rodadaUuid ORDER BY d.criadoEm DESC")
     Page<Disputa> findByRodadaUuidOrderByCriadoEmDesc(@Param("rodadaUuid") UUID rodadaUuid, Pageable pageable);
+
+    @Query("SELECT COUNT(d) FROM Disputa d WHERE d.rodada.uuid = :rodadaUuid AND d.situacao != 'CONCLUIDA'")
+    Long countDisputasNaoConcluidasByRodadaUuid(@Param("rodadaUuid") UUID rodadaUuid);
 }
