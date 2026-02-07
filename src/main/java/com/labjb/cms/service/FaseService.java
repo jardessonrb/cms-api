@@ -11,6 +11,12 @@ import com.labjb.cms.domain.model.Fase;
 import com.labjb.cms.domain.model.Categoria;
 import com.labjb.cms.domain.model.Atleta;
 import com.labjb.cms.domain.model.ResultadoFaseAtleta;
+import com.labjb.cms.domain.model.Rodada;
+import com.labjb.cms.domain.model.Disputa;
+import com.labjb.cms.domain.model.RegistroDisputa;
+import com.labjb.cms.domain.enums.SituacaoRodadaEnum;
+import com.labjb.cms.domain.enums.SituacaoDisputaEnum;
+import com.labjb.cms.domain.enums.TipoRodadaEnum;
 import com.labjb.cms.repository.FaseRepository;
 import com.labjb.cms.repository.CategoriaRepository;
 import com.labjb.cms.repository.AtletaRepository;
@@ -21,13 +27,16 @@ import com.labjb.cms.shared.mapper.FaseMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -69,8 +78,51 @@ public class FaseService {
                 throw new RegraNegocioException("Fase anterior deve estar FINALIZADA para usar critério N_PRIMEIROS");
             }
             
-            // TODO: Implementar lógica para buscar os N primeiros atletas da fase anterior
-            // Por enquanto, não adiciona atletas (será feito em outro método)
+            // Buscar atletas classificados e empatados
+            var atletasSeparados = separaAtletasClassificadosEEmpatadosPorQuantidade(
+                faseForm.faseAnterior(), faseForm.quantidadeAtletas());
+            
+            List<ResultadoFaseAtleta> atletasClassificadosDireto = atletasSeparados.getLeft();
+            List<ResultadoFaseAtleta> atletasEmpatados = atletasSeparados.getRight();
+
+            // Se houver atletas empatados, criar rodada de desempate na fase anterior
+            if (!atletasEmpatados.isEmpty()) {
+                Integer atletasParaProximaFase = faseForm.quantidadeAtletas() - atletasClassificadosDireto.size();
+                
+                Rodada rodadaDesempate = Rodada.builder()
+                    .nome("Rodada de Desempate - " + faseAnterior.getNome())
+                    .situacao(SituacaoRodadaEnum.CRIADA)
+                    .tipoRodada(TipoRodadaEnum.DESEMPATE)
+                    .fase(faseAnterior)
+                    .atletasParaProximaFase(atletasParaProximaFase)
+                    .disputas(new HashSet<>())
+                    .build();
+                
+                // Criar disputas para cada atleta empatado
+                for (ResultadoFaseAtleta atletaEmpatado : atletasEmpatados) {
+                    Disputa disputa = Disputa.builder()
+                        .situacao(SituacaoDisputaEnum.PENDENTE)
+                        .rodada(rodadaDesempate)
+                        .registroDisputas(new HashSet<>())
+                        .build();
+                    
+                    // Criar registro de disputa para o atleta
+                    RegistroDisputa registroDisputa = RegistroDisputa.builder()
+                        .atleta(atletaEmpatado.getAtleta())
+                        .disputa(disputa)
+                        .notas(new HashSet<>())
+                        .build();
+                    
+                    disputa.getRegistroDisputas().add(registroDisputa);
+                    rodadaDesempate.getDisputas().add(disputa);
+                }
+                
+                // Salvar a rodada de desempate na fase anterior
+                rodadaRepository.save(rodadaDesempate);
+                
+                // Não criar a nova fase ainda - aguardar resolução do desempate
+                throw new RegraNegocioException("Existem atletas empatados. Foi criada uma rodada de desempate na fase anterior. Aguarde a conclusão para criar esta fase.");
+            }
         }
 
         return faseMapper.toDto(faseRepository.save(fase));
@@ -99,31 +151,14 @@ public class FaseService {
     public List<PontuacaoParcialDto> buscarPontuacaoParcial(UUID faseId) {
         Fase fase = faseRepository.findByUuid(faseId)
                 .orElseThrow(() -> new RuntimeException("Fase não encontrada"));
-        
-        List<Object[]> results = faseRepository.findPontuacaoParcialByFaseId(fase.getId());
-        List<PontuacaoParcialDto> pontuacoes = new ArrayList<>();
-        
-        // Primeiro, criar todos os DTOs sem posição
-        for (Object[] row : results) {
-            pontuacoes.add(new PontuacaoParcialDto(
-                ((Number) row[0]).longValue(),  // atletaId
-                (String) row[1],  // categoria
-                (String) row[2],  // fase
-                (String) row[3],  // competidor
-                ((Number) row[4]).longValue(),  // partidas
-                ((Number) row[5]).longValue(),  // partidas_concluidas
-                ((Number) row[6]).doubleValue(),  // pontuacao_por_dupla
-                ((Number) row[7]).doubleValue(),  // pontuacao_por_atleta
-                ((Number) row[8]).doubleValue(),  // total_fase
-                null  // posicao será calculada abaixo
-            ));
-        }
-        
+
+        List<PontuacaoParcialDto> pontuacoes = extraiPontuacaoFase(fase);
+
         // Agora calcular posições e criar novos objetos com posição
         List<PontuacaoParcialDto> resultadoFinal = new ArrayList<>();
         if (!pontuacoes.isEmpty()) {
             int posicaoAtual = 1;
-            
+
             // Primeiro elemento sempre recebe posição 1
             PontuacaoParcialDto primeiro = pontuacoes.get(0);
             resultadoFinal.add(new PontuacaoParcialDto(
@@ -166,6 +201,29 @@ public class FaseService {
         }
         
         return resultadoFinal;
+    }
+
+    private @NonNull List<PontuacaoParcialDto> extraiPontuacaoFase(Fase fase) {
+        List<Object[]> resultados = faseRepository.findPontuacaoParcialByFaseId(fase.getId());
+
+        List<PontuacaoParcialDto> pontuacoes = new ArrayList<>();
+        // Primeiro, criar todos os DTOs sem posição
+        for (Object[] row : resultados) {
+            pontuacoes.add(new PontuacaoParcialDto(
+                ((Number) row[0]).longValue(),  // atletaId
+                (String) row[1],  // categoria
+                (String) row[2],  // fase
+                (String) row[3],  // competidor
+                ((Number) row[4]).longValue(),  // partidas
+                ((Number) row[5]).longValue(),  // partidas_concluidas
+                ((Number) row[6]).doubleValue(),  // pontuacao_por_dupla
+                ((Number) row[7]).doubleValue(),  // pontuacao_por_atleta
+                ((Number) row[8]).doubleValue(),  // total_fase
+                null  // posicao será calculada abaixo
+            ));
+        }
+
+        return pontuacoes;
     }
 
     public FaseDto finalizarFase(UUID faseId) {
@@ -220,9 +278,6 @@ public class FaseService {
     }
 
     public ValidacaoCorteDto validaCorte(UUID faseAnteriorUuid, Integer quantidadeAtletas) {
-        if(quantidadeAtletas < 1){
-            throw new RegraNegocioException("Quantidade de atletas deve ser positiva.");
-        }
         // Validar existência da fase anterior
         Fase faseAnterior = faseRepository.findByUuid(faseAnteriorUuid)
                 .orElseThrow(() -> new EntityNotFoundException("Fase anterior não encontrada"));
@@ -250,8 +305,8 @@ public class FaseService {
         List<ResultadoFaseAtleta> resultados = resultadoFaseAtletaRepository
                 .findByFaseUuidOrderByTotalDesc(faseAnteriorUuid);
 
-        if(quantidadeAtletas > resultados.size()){
-            throw new RegraNegocioException("A quantidade informada é maior que a quantidade de atletas na fase");
+        if(quantidadeAtletas < 1 || quantidadeAtletas > resultados.size()){
+            throw new RegraNegocioException("A quantidade de atletas não pode ser menor que 1 ou maior que a quantidade de atletas na fase");
         }
 
         // Buscar os N primeiros atletas por pontuação (ordenados por posição)
