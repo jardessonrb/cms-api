@@ -6,6 +6,7 @@ import com.labjb.cms.domain.dto.in.RegistrarNotasForm;
 import com.labjb.cms.domain.dto.out.DisputaDto;
 import com.labjb.cms.domain.dto.out.NotaDto;
 import com.labjb.cms.domain.enums.SituacaoDisputaEnum;
+import com.labjb.cms.domain.enums.TipoDisputaEnum;
 import com.labjb.cms.domain.model.*;
 import com.labjb.cms.repository.*;
 import com.labjb.cms.shared.errors.exception.RegraNegocioException;
@@ -37,38 +38,53 @@ public class NotaService {
         Disputa disputa = disputaRepository.findByUuid(disputaUuid)
                 .orElseThrow(() -> new RuntimeException("Disputa não encontrada"));
 
-        // Validar atletas da disputa
-        List<RegistroDisputa> registros = new ArrayList<>(disputa.getRegistroDisputas());
-        if (registros.size() != 2) {
-            throw new RegraNegocioException("Disputa deve ter exatamente 2 atletas");
+        // Validação do tipo de disputa
+        if (disputa.getTipoDisputa() == TipoDisputaEnum.DUPLA) {
+            if (form.atletas().size() != 2) {
+                throw new RegraNegocioException("Disputa do tipo DUPLA deve ter exatamente 2 atletas");
+            }
+        } else if (disputa.getTipoDisputa() == TipoDisputaEnum.INDIVIDUAL) {
+            if (form.atletas().size() != 1) {
+                throw new RegraNegocioException("Disputa do tipo INDIVIDUAL deve ter exatamente 1 atleta");
+            }
         }
 
-        if(form.primeiroAtleta().notas().size() != form.segundoAtleta().notas().size()){
-            throw new RegraNegocioException("Quantidade de notas entre atletas não podem ser diferentes.");
+        // Validar que todos os atletas têm a mesma quantidade de notas
+        if (!form.atletas().isEmpty()) {
+            int quantidadeNotas = form.atletas().get(0).notas().size();
+            for (AtletaNotasForm atletaNotas : form.atletas()) {
+                if (atletaNotas.notas().size() != quantidadeNotas) {
+                    throw new RegraNegocioException("Quantidade de notas entre atletas não podem ser diferentes.");
+                }
+            }
         }
 
-        List<UUID> uuidsJuradosPrimeiroAtleta = form.primeiroAtleta().notas().stream().map(nota -> nota.juradoId()).collect(Collectors.toList());
-        List<UUID> uuidsJuradosSegundoAtleta = form.segundoAtleta().notas().stream().map(nota -> nota.juradoId()).collect(Collectors.toList());
+        // Coletar todos os UUIDs de jurados
+        List<UUID> uuidsJurados = form.atletas().stream()
+                .flatMap(atletaNotas -> atletaNotas.notas().stream())
+                .map(nota -> nota.juradoId())
+                .collect(Collectors.toList());
 
-        List<Jurado> jurados = juradoRepository.findByUuidIn(Stream.concat(uuidsJuradosPrimeiroAtleta.stream(), uuidsJuradosSegundoAtleta.stream()).toList());
-        // Processar notas do primeiro atleta
-        processarNotasAtleta(registros, form.primeiroAtleta(), jurados);
+        List<Jurado> jurados = juradoRepository.findByUuidIn(uuidsJurados);
 
-        // Processar notas do segundo atleta
-        processarNotasAtleta(registros, form.segundoAtleta(), jurados);
+        // Processar notas de cada atleta individualmente
+        for (AtletaNotasForm atletaNotas : form.atletas()) {
+            RegistroDisputa registroDisputa = disputa.getRegistroDisputas().stream()
+                    .filter(rd -> rd.getAtleta().getUuid().equals(atletaNotas.atletaId()))
+                    .findFirst()
+                    .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado na disputa"));
+
+            processarNotasAtleta(registroDisputa, atletaNotas, jurados);
+        }
 
         // Marcar disputa como concluída
         disputa.setSituacao(SituacaoDisputaEnum.CONCLUIDA);
+        
         // Retornar disputa atualizada
         return disputaMapper.toDto(disputaRepository.save(disputa));
     }
 
-    private void processarNotasAtleta(List<RegistroDisputa> registros, AtletaNotasForm atletaNotas, List<Jurado> jurados) {
-        RegistroDisputa registroDisputa = registros.stream()
-                .filter(rd -> rd.getAtleta().getUuid().equals(atletaNotas.atletaId()))
-                .findFirst()
-                .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado na disputa"));
-
+    private void processarNotasAtleta(RegistroDisputa registroDisputa, AtletaNotasForm atletaNotas, List<Jurado> jurados) {
         for (NotaForm notaForm : atletaNotas.notas()) {
             // Validar notas (0 a 5)
             if (notaForm.notaDoAtleta() < 0 || notaForm.notaDoAtleta() > 5 ||

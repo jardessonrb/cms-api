@@ -9,7 +9,8 @@ public enum SituacaoFaseEnum {
 
     CRIADA("Criada"),
     INICIADA("Iniciada"),
-    FINALIZADA("Finalizada");
+    FINALIZADA("Finalizada"),
+    AGUARDANDO_DESEMPATE("Aguardando Desempate");
 
     private String descricao;
 }

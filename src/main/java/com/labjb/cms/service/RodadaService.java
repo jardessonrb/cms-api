@@ -3,8 +3,11 @@ package com.labjb.cms.service;
 import com.labjb.cms.component.GeradorDeDisputas;
 import com.labjb.cms.domain.dto.in.RodadaForm;
 import com.labjb.cms.domain.dto.out.RodadaDto;
+import com.labjb.cms.domain.dto.out.FaseDto;
 import com.labjb.cms.domain.enums.SituacaoDisputaEnum;
 import com.labjb.cms.domain.enums.SituacaoRodadaEnum;
+import com.labjb.cms.domain.enums.SituacaoFaseEnum;
+import com.labjb.cms.domain.enums.TipoRodadaEnum;
 import com.labjb.cms.domain.model.*;
 import com.labjb.cms.repository.AtletaRepository;
 import com.labjb.cms.repository.DisputaRepository;
@@ -12,6 +15,7 @@ import com.labjb.cms.repository.FaseRepository;
 import com.labjb.cms.repository.RodadaRepository;
 import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.RodadaMapper;
+import com.labjb.cms.shared.mapper.FaseMapper;
 import com.labjb.cms.shared.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -31,6 +36,7 @@ public class RodadaService {
     private final AtletaRepository atletaRepository;
     private final DisputaRepository disputaRepository;
     private final RodadaMapper rodadaMapper;
+    private final FaseMapper faseMapper;
     private final GeradorDeDisputas geradorDeDisputas;
 
     public RodadaDto criaRodada(RodadaForm rodadaForm) {
@@ -139,8 +145,137 @@ public class RodadaService {
             throw new RegraNegocioException("Todas as disputas devem estar CONCLUIDA para finalizar a rodada");
         }
 
+        // Se for rodada de desempate, executar lógica específica
+        if (rodada.getTipoRodada() == TipoRodadaEnum.DESEMPATE) {
+            finalizarRodadaDesempate(rodada);
+            return rodadaMapper.toDto(rodadaRepository.save(rodada));
+        }
+
         rodada.setSituacao(SituacaoRodadaEnum.FINALIZADA);
 
         return rodadaMapper.toDto(rodadaRepository.save(rodada));
+    }
+
+    @Transactional
+    public FaseDto finalizarRodadaDesempate(Rodada rodada) {
+        // 1° Verificar se é uma rodada de desempate
+        if (rodada.getTipoRodada() != TipoRodadaEnum.DESEMPATE) {
+            throw new RegraNegocioException("Rodada deve ser do tipo DESEMPATE");
+        }
+
+        // 2° Buscar todas as disputas da rodada e verificar se estão CONCLUIDAS
+        for (Disputa disputa : rodada.getDisputas()) {
+            if (disputa.getSituacao() != SituacaoDisputaEnum.CONCLUIDA) {
+                throw new RegraNegocioException("Todas as disputas da rodada de desempate devem estar CONCLUIDAS");
+            }
+        }
+
+        // 3° Calcular a média das notas individuais de cada atleta na rodada
+        List<ResultadoFaseAtleta> resultadosDesempate = new ArrayList<>();
+        
+        for (Disputa disputa : rodada.getDisputas()) {
+            for (RegistroDisputa registro : disputa.getRegistroDisputas()) {
+                Atleta atleta = registro.getAtleta();
+                
+                // Calcular média das notas individuais do atleta nesta rodada
+                Double mediaNotasIndividuais = registro.getNotas().stream()
+                        .mapToDouble(nota -> nota.getNotaDoAtleta())
+                        .average()
+                        .orElse(0.0);
+                
+                ResultadoFaseAtleta resultado = ResultadoFaseAtleta.builder()
+                        .atleta(atleta)
+                        .notaIndividual(mediaNotasIndividuais)
+                        .notaDupla(0.0) // Não relevante para desempate
+                        .total(mediaNotasIndividuais)
+                        .build();
+                
+                resultadosDesempate.add(resultado);
+            }
+        }
+
+        // Ordenar resultados pelo total (maior para menor)
+        resultadosDesempate.sort((a, b) -> Double.compare(b.getTotal(), a.getTotal()));
+
+        // 4° Verificar se há empates na quantidade de atletas que devem passar
+        Integer atletasParaProximaFase = rodada.getAtletasParaProximaFase();
+        var atletasSeparados = separaAtletasClassificadosEEmpatadosPorQuantidade(
+                resultadosDesempate, atletasParaProximaFase);
+        
+        List<ResultadoFaseAtleta> atletasClassificados = atletasSeparados.getLeft();
+        List<ResultadoFaseAtleta> atletasEmpatados = atletasSeparados.getRight();
+
+        if (!atletasEmpatados.isEmpty()) {
+            throw new RegraNegocioException("Não pode haver empates na rodada de desempate. Existem atletas empatados na posição de corte.");
+        }
+
+        // 5° Pegar os primeiros atletas e adicionar na fase que está aguardando desempate
+        Set<Atleta> atletasParaAdicionar = atletasClassificados.stream()
+                .map(ResultadoFaseAtleta::getAtleta)
+                .collect(Collectors.toSet());
+
+        // Buscar fase que está aguardando desempate (próxima fase na mesma categoria)
+        Fase faseAnterior = rodada.getFase();
+        List<Fase> fasesCategoria = faseRepository.findByCategoriaUuidOrderByOrdemDesc(faseAnterior.getCategoria().getUuid(), null)
+                .getContent()
+                .stream()
+                .filter(f -> f.getOrdem() > faseAnterior.getOrdem())
+                .sorted((a, b) -> Integer.compare(a.getOrdem(), b.getOrdem()))
+                .toList();
+
+        if (fasesCategoria.isEmpty()) {
+            throw new RegraNegocioException("Não foi encontrada uma fase aguardando desempate");
+        }
+
+        Fase faseAguardandoDesempate = fasesCategoria.get(0);
+        if (faseAguardandoDesempate.getSituacao() != SituacaoFaseEnum.AGUARDANDO_DESEMPATE) {
+            throw new RegraNegocioException("A próxima fase não está aguardando desempate");
+        }
+
+        // Adicionar atletas classificados à fase
+        faseAguardandoDesempate.getAtletas().addAll(atletasParaAdicionar);
+
+        // 6° Mudar a situação da fase AGUARDANDO_DESEMPATE para CRIADA
+        faseAguardandoDesempate.setSituacao(SituacaoFaseEnum.CRIADA);
+
+        // 7° Encerrar a rodada de desempate como FINALIZADA
+        rodada.setSituacao(SituacaoRodadaEnum.FINALIZADA);
+
+        // Salvar as alterações
+        rodadaRepository.save(rodada);
+
+        return faseMapper.toDto(faseRepository.save(faseAguardandoDesempate));
+    }
+
+    private Pair<List<ResultadoFaseAtleta>, List<ResultadoFaseAtleta>> separaAtletasClassificadosEEmpatadosPorQuantidade(
+            List<ResultadoFaseAtleta> resultados, Integer quantidadeAtletas) {
+        
+        if(quantidadeAtletas < 1 || quantidadeAtletas > resultados.size()){
+            throw new RegraNegocioException("A quantidade de atletas não pode ser menor que 1 ou maior que a quantidade de atletas na fase");
+        }
+
+        // Buscar os N primeiros atletas por pontuação (ordenados por posição)
+        Double totalDoUltimoAtletaDaQuantidade = resultados.stream()
+                .limit(quantidadeAtletas)
+                .toList()
+                .getLast()
+                .getTotal();
+
+        List<ResultadoFaseAtleta> atletasNaProximaFaseDireto = new ArrayList<>();
+        List<ResultadoFaseAtleta> candidatosAProximaFase = new ArrayList<>();
+        for(ResultadoFaseAtleta resultado : resultados){
+            if(resultado.getTotal() > totalDoUltimoAtletaDaQuantidade){
+                atletasNaProximaFaseDireto.add(resultado);
+            }else if(resultado.getTotal().equals(totalDoUltimoAtletaDaQuantidade)){
+                candidatosAProximaFase.add(resultado);
+            }
+        }
+
+        if((candidatosAProximaFase.size() + atletasNaProximaFaseDireto.size()) == quantidadeAtletas){
+            atletasNaProximaFaseDireto.addAll(candidatosAProximaFase);
+            return Pair.of(atletasNaProximaFaseDireto, new ArrayList<>());
+        }
+
+        return Pair.of(atletasNaProximaFaseDireto, candidatosAProximaFase);
     }
 }

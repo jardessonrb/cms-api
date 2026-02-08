@@ -31,6 +31,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -51,6 +52,7 @@ public class FaseService {
     private final RodadaRepository rodadaRepository;
     private final FaseMapper faseMapper;
 
+    @Transactional
     public FaseDto criaFase(FaseForm faseForm) {
         Categoria categoria = categoriaRepository.findByUuid(faseForm.categoriaId())
                 .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
@@ -120,8 +122,11 @@ public class FaseService {
                 // Salvar a rodada de desempate na fase anterior
                 rodadaRepository.save(rodadaDesempate);
                 
-                // Não criar a nova fase ainda - aguardar resolução do desempate
-                throw new RegraNegocioException("Existem atletas empatados. Foi criada uma rodada de desempate na fase anterior. Aguarde a conclusão para criar esta fase.");
+                // Criar fase com situação AGUARDANDO_DESEMPATE contendo os atletas classificados direto
+                fase.setSituacao(SituacaoFaseEnum.AGUARDANDO_DESEMPATE);
+                fase.setAtletas(atletasClassificadosDireto.stream()
+                        .map(ResultadoFaseAtleta::getAtleta)
+                        .collect(Collectors.toSet()));
             }
         }
 

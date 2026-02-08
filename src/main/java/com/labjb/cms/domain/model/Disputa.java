@@ -1,6 +1,7 @@
 package com.labjb.cms.domain.model;
 
 import com.labjb.cms.domain.enums.SituacaoDisputaEnum;
+import com.labjb.cms.domain.enums.TipoDisputaEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,6 +18,9 @@ public class Disputa extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private SituacaoDisputaEnum situacao;
+
+    @Enumerated(EnumType.STRING)
+    private TipoDisputaEnum tipoDisputa;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rodada_id")
