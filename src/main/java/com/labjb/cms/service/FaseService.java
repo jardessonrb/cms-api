@@ -1,5 +1,6 @@
 package com.labjb.cms.service;
 
+import com.labjb.cms.component.SeparadorAtletasComponent;
 import com.labjb.cms.domain.dto.in.FaseForm;
 import com.labjb.cms.domain.dto.out.FaseDto;
 import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
@@ -51,6 +52,7 @@ public class FaseService {
     private final ResultadoFaseAtletaRepository resultadoFaseAtletaRepository;
     private final RodadaRepository rodadaRepository;
     private final FaseMapper faseMapper;
+    private final SeparadorAtletasComponent separadorAtletasComponent;
 
     @Transactional
     public FaseDto criaFase(FaseForm faseForm) {
@@ -79,10 +81,10 @@ public class FaseService {
             if (faseAnterior.getSituacao() != SituacaoFaseEnum.FINALIZADA) {
                 throw new RegraNegocioException("Fase anterior deve estar FINALIZADA para usar critério N_PRIMEIROS");
             }
-            
+
+            List<ResultadoFaseAtleta> resultadosDaFaseAnterior = resultadoFaseAtletaRepository.findByFaseUuidOrderByTotalDesc(faseForm.faseAnterior());
             // Buscar atletas classificados e empatados
-            var atletasSeparados = separaAtletasClassificadosEEmpatadosPorQuantidade(
-                faseForm.faseAnterior(), faseForm.quantidadeAtletas());
+            var atletasSeparados = separadorAtletasComponent.separaAtletasClassificadosEEmpatadosPorQuantidade(resultadosDaFaseAnterior, faseForm.quantidadeAtletas());
             
             List<ResultadoFaseAtleta> atletasClassificadosDireto = atletasSeparados.getLeft();
             List<ResultadoFaseAtleta> atletasEmpatados = atletasSeparados.getRight();
@@ -292,7 +294,14 @@ public class FaseService {
             throw new RegraNegocioException("Fase anterior deve estar FINALIZADA para validar o corte");
         }
 
-        Pair<List<ResultadoFaseAtleta>, List<ResultadoFaseAtleta>> atletas = separaAtletasClassificadosEEmpatadosPorQuantidade(faseAnteriorUuid, quantidadeAtletas);
+        // Buscar resultados da fase anterior ordenados por posição
+        List<ResultadoFaseAtleta> resultados = resultadoFaseAtletaRepository
+                .findByFaseUuidOrderByTotalDesc(faseAnteriorUuid)
+                .stream()
+                .sorted((a, b) -> Double.compare(b.getTotal(), a.getTotal()))
+                .toList();
+
+        Pair<List<ResultadoFaseAtleta>, List<ResultadoFaseAtleta>> atletas = separadorAtletasComponent.separaAtletasClassificadosEEmpatadosPorQuantidade(resultados, quantidadeAtletas);
 
         List<ResultadoFaseAtletaDto> atletasEmpatados = atletas
                 .getRight()
@@ -303,39 +312,5 @@ public class FaseService {
                 .toList();
 
         return new ValidacaoCorteDto(atletasEmpatados.size(), atletasEmpatados);
-    }
-
-    private Pair<List<ResultadoFaseAtleta>, List<ResultadoFaseAtleta>> separaAtletasClassificadosEEmpatadosPorQuantidade(UUID faseAnteriorUuid, Integer quantidadeAtletas) {
-        // Buscar resultados da fase anterior ordenados por posição
-        List<ResultadoFaseAtleta> resultados = resultadoFaseAtletaRepository
-                .findByFaseUuidOrderByTotalDesc(faseAnteriorUuid);
-
-        if(quantidadeAtletas < 1 || quantidadeAtletas > resultados.size()){
-            throw new RegraNegocioException("A quantidade de atletas não pode ser menor que 1 ou maior que a quantidade de atletas na fase");
-        }
-
-        // Buscar os N primeiros atletas por pontuação (ordenados por posição)
-        Double totalDoUltimoAtletaDaQuantidade = resultados.stream()
-                .limit(quantidadeAtletas)
-                .toList()
-                .getLast()
-                .getTotal();
-
-        List<ResultadoFaseAtleta> atletasNaProximaFaseDireto = new ArrayList<>();
-        List<ResultadoFaseAtleta> candidatosAProximaFase = new ArrayList<>();
-        for(ResultadoFaseAtleta resultado : resultados){
-            if(resultado.getTotal() > totalDoUltimoAtletaDaQuantidade){
-                atletasNaProximaFaseDireto.add(resultado);
-            }else if(resultado.getTotal().equals(totalDoUltimoAtletaDaQuantidade)){
-                candidatosAProximaFase.add(resultado);
-            }
-        }
-
-        if((candidatosAProximaFase.size() + atletasNaProximaFaseDireto.size()) == quantidadeAtletas){
-            atletasNaProximaFaseDireto.addAll(candidatosAProximaFase);
-            return Pair.of(atletasNaProximaFaseDireto, new ArrayList<>());
-        }
-
-        return Pair.of(atletasNaProximaFaseDireto, candidatosAProximaFase);
     }
 }

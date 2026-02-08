@@ -1,13 +1,11 @@
 package com.labjb.cms.service;
 
 import com.labjb.cms.component.GeradorDeDisputas;
+import com.labjb.cms.component.SeparadorAtletasComponent;
 import com.labjb.cms.domain.dto.in.RodadaForm;
 import com.labjb.cms.domain.dto.out.RodadaDto;
 import com.labjb.cms.domain.dto.out.FaseDto;
-import com.labjb.cms.domain.enums.SituacaoDisputaEnum;
-import com.labjb.cms.domain.enums.SituacaoRodadaEnum;
-import com.labjb.cms.domain.enums.SituacaoFaseEnum;
-import com.labjb.cms.domain.enums.TipoRodadaEnum;
+import com.labjb.cms.domain.enums.*;
 import com.labjb.cms.domain.model.*;
 import com.labjb.cms.repository.AtletaRepository;
 import com.labjb.cms.repository.DisputaRepository;
@@ -38,6 +36,7 @@ public class RodadaService {
     private final RodadaMapper rodadaMapper;
     private final FaseMapper faseMapper;
     private final GeradorDeDisputas geradorDeDisputas;
+    private final SeparadorAtletasComponent separadorAtletasComponent;
 
     public RodadaDto criaRodada(RodadaForm rodadaForm) {
         Fase fase = faseRepository.findByUuid(rodadaForm.faseId())
@@ -113,10 +112,11 @@ public class RodadaService {
                 .situacao(SituacaoDisputaEnum.PENDENTE)
                 .build();
 
-            RegistroDisputa registroDisputaAtletaA = RegistroDisputa.builder().atleta(atletaA).disputa(disputa).build();
-            RegistroDisputa registroDisputaAtletaB = RegistroDisputa.builder().atleta(atletaB).disputa(disputa).build();
+            RegistroDisputa registroDisputaAtletaA = RegistroDisputa.builder().atleta(atletaA).disputa(disputa).tipoRegistro(disputaPareada.getLeft().equals(0L) ? TipoRegistroDisputaEnum.NAO_PONTUADO : TipoRegistroDisputaEnum.PONTUADO).build();
+            RegistroDisputa registroDisputaAtletaB = RegistroDisputa.builder().atleta(atletaB).disputa(disputa).tipoRegistro(disputaPareada.getRight().equals(0L) ? TipoRegistroDisputaEnum.NAO_PONTUADO : TipoRegistroDisputaEnum.PONTUADO).build();
 
             disputa.setRegistroDisputas(new HashSet<>(Arrays.asList(registroDisputaAtletaA, registroDisputaAtletaB)));
+            disputa.setTipoDisputa(disputa.getRegistroDisputas().stream().anyMatch(registro -> registro.getTipoRegistro().equals(TipoRegistroDisputaEnum.NAO_PONTUADO)) ? TipoDisputaEnum.INDIVIDUAL : TipoDisputaEnum.DUPLA);
             disputas.add(disputa);
         }
 
@@ -199,7 +199,7 @@ public class RodadaService {
 
         // 4° Verificar se há empates na quantidade de atletas que devem passar
         Integer atletasParaProximaFase = rodada.getAtletasParaProximaFase();
-        var atletasSeparados = separaAtletasClassificadosEEmpatadosPorQuantidade(
+        var atletasSeparados = separadorAtletasComponent.separaAtletasClassificadosEEmpatadosPorQuantidade(
                 resultadosDesempate, atletasParaProximaFase);
         
         List<ResultadoFaseAtleta> atletasClassificados = atletasSeparados.getLeft();
@@ -245,37 +245,5 @@ public class RodadaService {
         rodadaRepository.save(rodada);
 
         return faseMapper.toDto(faseRepository.save(faseAguardandoDesempate));
-    }
-
-    private Pair<List<ResultadoFaseAtleta>, List<ResultadoFaseAtleta>> separaAtletasClassificadosEEmpatadosPorQuantidade(
-            List<ResultadoFaseAtleta> resultados, Integer quantidadeAtletas) {
-        
-        if(quantidadeAtletas < 1 || quantidadeAtletas > resultados.size()){
-            throw new RegraNegocioException("A quantidade de atletas não pode ser menor que 1 ou maior que a quantidade de atletas na fase");
-        }
-
-        // Buscar os N primeiros atletas por pontuação (ordenados por posição)
-        Double totalDoUltimoAtletaDaQuantidade = resultados.stream()
-                .limit(quantidadeAtletas)
-                .toList()
-                .getLast()
-                .getTotal();
-
-        List<ResultadoFaseAtleta> atletasNaProximaFaseDireto = new ArrayList<>();
-        List<ResultadoFaseAtleta> candidatosAProximaFase = new ArrayList<>();
-        for(ResultadoFaseAtleta resultado : resultados){
-            if(resultado.getTotal() > totalDoUltimoAtletaDaQuantidade){
-                atletasNaProximaFaseDireto.add(resultado);
-            }else if(resultado.getTotal().equals(totalDoUltimoAtletaDaQuantidade)){
-                candidatosAProximaFase.add(resultado);
-            }
-        }
-
-        if((candidatosAProximaFase.size() + atletasNaProximaFaseDireto.size()) == quantidadeAtletas){
-            atletasNaProximaFaseDireto.addAll(candidatosAProximaFase);
-            return Pair.of(atletasNaProximaFaseDireto, new ArrayList<>());
-        }
-
-        return Pair.of(atletasNaProximaFaseDireto, candidatosAProximaFase);
     }
 }

@@ -1,5 +1,6 @@
 package com.labjb.cms.domain.model;
 
+import com.labjb.cms.domain.enums.TipoRegistroDisputaEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,6 +22,9 @@ public class RegistroDisputa extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "disputa_id")
     private Disputa disputa;
+
+    @Enumerated(EnumType.STRING)
+    private TipoRegistroDisputaEnum tipoRegistro;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "registro_disputa_id")
