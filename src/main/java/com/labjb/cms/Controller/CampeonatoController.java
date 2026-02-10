@@ -2,6 +2,7 @@ package com.labjb.cms.Controller;
 
 import com.labjb.cms.domain.dto.in.CampeonatoForm;
 import com.labjb.cms.domain.dto.out.CampeonatoDto;
+import com.labjb.cms.domain.dto.out.CampeonatoDetalhadoDto;
 import com.labjb.cms.service.CampeonatoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -59,5 +60,16 @@ public class CampeonatoController {
     })
     public ResponseEntity<Page<CampeonatoDto>> listarCampeonatos(@PageableDefault(size = 10, page = 0) Pageable pageable) {
         return ResponseEntity.ok(campeonatoService.listarCampeonatos(pageable));
+    }
+
+    @GetMapping("/{uuid}")
+    @Operation(summary = "Buscar campeonato por UUID", description = "Busca um campeonato específico pelo UUID com estatísticas detalhadas")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Campeonato encontrado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Campeonato não encontrado")
+    })
+    public ResponseEntity<CampeonatoDetalhadoDto> buscarCampeonatoPorUuid(
+            @Parameter(description = "UUID do campeonato") @PathVariable UUID uuid) {
+        return ResponseEntity.ok(campeonatoService.buscarCampeonatoPorUuid(uuid));
     }
 }
