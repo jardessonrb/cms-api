@@ -2,10 +2,15 @@ package com.labjb.cms.service;
 
 import com.labjb.cms.domain.dto.in.AtletaForm;
 import com.labjb.cms.domain.dto.out.AtletaDto;
+import com.labjb.cms.domain.enums.SituacaoInscricaoCategoriaEnum;
 import com.labjb.cms.domain.model.Atleta;
 import com.labjb.cms.domain.model.Campeonato;
+import com.labjb.cms.domain.model.Categoria;
+import com.labjb.cms.domain.model.InscricaoCategoria;
 import com.labjb.cms.repository.AtletaRepository;
 import com.labjb.cms.repository.CampeonatoRepository;
+import com.labjb.cms.repository.CategoriaRepository;
+import com.labjb.cms.repository.InscricaoCategoriaRepository;
 import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.AtletaMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -14,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -21,6 +27,8 @@ import java.util.UUID;
 public class AtletaService {
 
     private final AtletaRepository atletaRepository;
+    private final CategoriaRepository categoriaRepository;
+    private final InscricaoCategoriaRepository inscricaoCategoriaRepository;
     private final CampeonatoRepository campeonatoRepository;
     private final AtletaMapper atletaMapper;
 
@@ -30,8 +38,28 @@ public class AtletaService {
 
         Atleta atleta = atletaMapper.toEntity(atletaForm);
         atleta.setCampeonato(campeonato);
+        atleta = atletaRepository.save(atleta);
 
-        return atletaMapper.toDto(atletaRepository.save(atleta));
+        if(Objects.nonNull(atletaForm.categoriaId())){
+            inscreveAtletaNaCategoria(atletaForm, atleta);
+        }
+
+        return atletaMapper.toDto(atleta);
+    }
+
+    private void inscreveAtletaNaCategoria(AtletaForm atletaForm, Atleta atleta) {
+        Categoria categoria = categoriaRepository
+                .findByUuidAndCampeonatoUuid(atletaForm.categoriaId(), atletaForm.campeonatoId())
+                .orElse(null);
+
+        if(Objects.nonNull(categoria)){
+            InscricaoCategoria inscricao = InscricaoCategoria.builder()
+                    .atleta(atleta)
+                    .categoria(categoria)
+                    .situacao(SituacaoInscricaoCategoriaEnum.ATIVO)
+                    .build();
+            inscricaoCategoriaRepository.save(inscricao);
+        }
     }
 
     public AtletaDto atualizaAtleta(UUID id, AtletaForm atletaForm) {

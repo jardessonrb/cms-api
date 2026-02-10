@@ -11,6 +11,7 @@ public record AtletaForm(
         String cidade,
         String grupo,
         String graduacao,
-        UUID campeonatoId
+        UUID campeonatoId,
+        UUID categoriaId
 ) {
 }

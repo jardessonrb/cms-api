@@ -45,9 +45,9 @@ public class CategoriaController {
     @Operation(summary = "Listar categorias por campeonato", description = "Lista todas as categorias de um campeonato específico com paginação e filtros")
     public ResponseEntity<Page<CategoriaDto>> listarCategoriasPorCampeonato(
             @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId,
-            @Parameter(description = "Filtro por nome da categoria") @RequestParam(required = false) String nome,
+            @Parameter(description = "Filtro por nome da categoria") @RequestParam(required = false, name = "filtro") String filtro,
             @Parameter(description = "Configurações de paginação") Pageable pageable) {
-        return ResponseEntity.ok(categoriaService.listarCategoriasPorCampeonato(campeonatoId, nome, pageable));
+        return ResponseEntity.ok(categoriaService.listarCategoriasPorCampeonato(campeonatoId, filtro, pageable));
     }
 
     @PostMapping("/{categoriaId}/atleta/{atletaId}/inscrever")

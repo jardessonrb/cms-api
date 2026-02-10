@@ -22,4 +22,6 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
     Page<Categoria> findByCampeonatoUuidWithFilters(@Param("campeonatoId") UUID campeonatoId, 
                                                    @Param("nome") String nome, 
                                                    Pageable pageable);
+
+    Optional<Categoria> findByUuidAndCampeonatoUuid(UUID categoriaId, UUID campeonatoId);
 }
