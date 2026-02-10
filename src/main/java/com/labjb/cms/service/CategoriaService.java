@@ -14,6 +14,8 @@ import com.labjb.cms.repository.InscricaoCategoriaRepository;
 import com.labjb.cms.repository.AtletaRepository;
 import com.labjb.cms.shared.mapper.CategoriaMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -54,6 +56,11 @@ public class CategoriaService {
         return categoriaMapper.toDto(categoriaRepository.save(categoria));
     }
 
+    public Page<CategoriaDto> listarCategoriasPorCampeonato(UUID campeonatoId, String nome, Pageable pageable) {
+        return categoriaRepository.findByCampeonatoUuidWithFilters(campeonatoId, nome, pageable)
+                .map(categoriaMapper::toDto);
+    }
+    
     public List<CategoriaDto> listarCategoriasPorCampeonato(UUID campeonatoId) {
         return categoriaRepository.findByCampeonatoUuid(campeonatoId)
                 .stream()

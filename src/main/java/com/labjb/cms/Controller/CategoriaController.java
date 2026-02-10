@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -40,10 +42,12 @@ public class CategoriaController {
     }
 
     @GetMapping("/campeonato/{campeonatoId}")
-    @Operation(summary = "Listar categorias por campeonato", description = "Lista todas as categorias de um campeonato específico")
-    public ResponseEntity<List<CategoriaDto>> listarCategoriasPorCampeonato(
-            @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId) {
-        return ResponseEntity.ok(categoriaService.listarCategoriasPorCampeonato(campeonatoId));
+    @Operation(summary = "Listar categorias por campeonato", description = "Lista todas as categorias de um campeonato específico com paginação e filtros")
+    public ResponseEntity<Page<CategoriaDto>> listarCategoriasPorCampeonato(
+            @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId,
+            @Parameter(description = "Filtro por nome da categoria") @RequestParam(required = false) String nome,
+            @Parameter(description = "Configurações de paginação") Pageable pageable) {
+        return ResponseEntity.ok(categoriaService.listarCategoriasPorCampeonato(campeonatoId, nome, pageable));
     }
 
     @PostMapping("/{categoriaId}/atleta/{atletaId}/inscrever")
