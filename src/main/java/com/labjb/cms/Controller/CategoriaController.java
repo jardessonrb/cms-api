@@ -41,6 +41,13 @@ public class CategoriaController {
         return ResponseEntity.ok(categoriaService.atualizaCategoria(id, categoriaForm));
     }
 
+    @GetMapping("/{id}")
+    @Operation(summary = "Atualizar categoria", description = "Busca os dados de uma categoria existente")
+    public ResponseEntity<CategoriaDto> buscaCategoriaPorId(
+            @Parameter(description = "UUID da categoria") @PathVariable UUID id) {
+        return ResponseEntity.ok(categoriaService.buscaCategoriaPorId(id));
+    }
+
     @GetMapping("/campeonato/{campeonatoId}")
     @Operation(summary = "Listar categorias por campeonato", description = "Lista todas as categorias de um campeonato específico com paginação e filtros")
     public ResponseEntity<Page<CategoriaDto>> listarCategoriasPorCampeonato(

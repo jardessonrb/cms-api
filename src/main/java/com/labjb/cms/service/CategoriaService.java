@@ -56,6 +56,27 @@ public class CategoriaService {
         return categoriaMapper.toDto(categoriaRepository.save(categoria));
     }
 
+    public CategoriaDto buscaCategoriaPorId(UUID id) {
+        Categoria categoria = categoriaRepository.findByUuid(id)
+                .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
+
+        // Buscar quantidades adicionais
+        List<Object[]> quantidades = categoriaRepository.findCategoriaWithQuantidadesByUuid(categoria.getId());
+        
+        Integer quantidadeAtletas = !quantidades.isEmpty() ? ((Number)quantidades.get(0)[1]).intValue() : 0;
+        Integer quantidadeFases = !quantidades.isEmpty() ? ((Number)quantidades.get(0)[2]).intValue() : 0;
+
+        return new CategoriaDto(
+            categoria.getUuid(),
+            categoria.getNome(),
+            categoria.getSituacao(),
+            categoria.getCriadoEm(),
+            categoria.getCampeonato().getUuid(),
+            quantidadeAtletas,
+            quantidadeFases
+        );
+    }
+
     public Page<CategoriaDto> listarCategoriasPorCampeonato(UUID campeonatoId, String nome, Pageable pageable) {
         return categoriaRepository.findByCampeonatoUuidWithFilters(campeonatoId, nome, pageable)
                 .map(categoriaMapper::toDto);

@@ -9,6 +9,8 @@ public record CategoriaDto(
         UUID id,
         String nome,
         SituacaoCategoriaEnum situacao,
-        LocalDateTime criadoEm
-) {
-}
+        LocalDateTime criadoEm,
+        UUID campeonatoId,
+        Integer quantidadeAtletas,
+        Integer quantidadeFases
+) {}

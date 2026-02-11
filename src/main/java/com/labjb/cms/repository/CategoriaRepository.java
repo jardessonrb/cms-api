@@ -23,5 +23,18 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
                                                    @Param("nome") String nome, 
                                                    Pageable pageable);
 
+    @Query(value = """
+            select tc.id, 
+                   count(distinct ta.id) as quantidade_atletas, 
+                   count(distinct tf.id) as quantidade_fases 
+            from tb_categoria tc 
+            left join tb_inscricao_categoria tic on tic.categoria_id = tc.id 
+            left join tb_atleta ta on tic.atleta_id = ta.id 
+            left join tb_fase tf on tf.categoria_id = tc.id 
+            where tc.id = :id 
+            group by tc.id
+            """, nativeQuery = true)
+    List<Object[]> findCategoriaWithQuantidadesByUuid(@Param("id") Long id);
+
     Optional<Categoria> findByUuidAndCampeonatoUuid(UUID categoriaId, UUID campeonatoId);
 }

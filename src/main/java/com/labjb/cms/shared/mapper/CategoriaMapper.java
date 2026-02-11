@@ -11,7 +11,8 @@ import org.mapstruct.Mappings;
 public interface CategoriaMapper extends BaseMaps<CategoriaDto, Categoria, CategoriaForm> {
 
     @Mappings({
-            @Mapping(target = "id", source = "uuid")
+            @Mapping(target = "id", source = "uuid"),
+            @Mapping(target = "campeonatoId", source = "campeonato.uuid")
     })
     CategoriaDto toDto(Categoria entity);
 }
