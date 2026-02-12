@@ -20,6 +20,7 @@ import java.util.Set;
 public class Atleta extends BaseEntity {
 
     private String nome;
+    private Integer numero;
     private String apelido;
     private String responsavel;
     private LocalDate dataNascimento;

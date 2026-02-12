@@ -5,6 +5,7 @@ public record PontuacaoParcialDto(
         String categoria,
         String fase,
         String competidor,
+        Integer numeroCompetidor,
         Long partidas,
         Long partidasConcluidas,
         Double notaIndividual,

@@ -150,6 +150,12 @@ public class FaseService {
         return faseMapper.toDto(faseRepository.save(fase));
     }
 
+    public FaseDto buscarFasePorUuid(UUID uuid) {
+        Fase fase = faseRepository.findByUuid(uuid)
+                .orElseThrow(() -> new EntityNotFoundException("Fase não encontrada"));
+        return faseMapper.toDto(fase);
+    }
+
     public Page<FaseDto> listarFasesPorCategoria(UUID categoriaId, Pageable pageable) {
         return faseRepository.findByCategoriaUuidOrderByOrdemDesc(categoriaId, pageable)
                 .map(faseMapper::toDto);
@@ -170,7 +176,7 @@ public class FaseService {
             PontuacaoParcialDto primeiro = pontuacoes.get(0);
             resultadoFinal.add(new PontuacaoParcialDto(
                 primeiro.atletaId(),
-                primeiro.categoria(), primeiro.fase(), primeiro.competidor(),
+                primeiro.categoria(), primeiro.fase(), primeiro.competidor(), primeiro.numeroCompetidor(),
                 primeiro.partidas(), primeiro.partidasConcluidas(), 
                 primeiro.notaIndividual(), primeiro.notaDupla(), primeiro.total(),
                 posicaoAtual
@@ -188,7 +194,7 @@ public class FaseService {
                     // Mesmo total, mesma posição
                     resultadoFinal.add(new PontuacaoParcialDto(
                         atual.atletaId(),
-                        atual.categoria(), atual.fase(), atual.competidor(),
+                        atual.categoria(), atual.fase(), atual.competidor(), atual.numeroCompetidor(),
                         atual.partidas(), atual.partidasConcluidas(), 
                         atual.notaIndividual(), atual.notaDupla(), atual.total(),
                         posicaoAtual
@@ -198,7 +204,7 @@ public class FaseService {
                     posicaoAtual = i + 1;
                     resultadoFinal.add(new PontuacaoParcialDto(
                         atual.atletaId(),
-                        atual.categoria(), atual.fase(), atual.competidor(),
+                        atual.categoria(), atual.fase(), atual.competidor(), atual.numeroCompetidor(),
                         atual.partidas(), atual.partidasConcluidas(), 
                         atual.notaIndividual(), atual.notaDupla(), atual.total(),
                         posicaoAtual
@@ -221,11 +227,12 @@ public class FaseService {
                 (String) row[1],  // categoria
                 (String) row[2],  // fase
                 (String) row[3],  // competidor
-                ((Number) row[4]).longValue(),  // partidas
-                ((Number) row[5]).longValue(),  // partidas_concluidas
-                ((Number) row[6]).doubleValue(),  // pontuacao_por_dupla
-                ((Number) row[7]).doubleValue(),  // pontuacao_por_atleta
-                ((Number) row[8]).doubleValue(),  // total_fase
+                row[4] != null ? ((Number) row[4]).intValue() : null,  // numeroCompetidor
+                ((Number) row[5]).longValue(),  // partidas
+                ((Number) row[6]).longValue(),  // partidas_concluidas
+                ((Number) row[7]).doubleValue(),  // pontuacao_por_dupla
+                ((Number) row[8]).doubleValue(),  // pontuacao_por_atleta
+                ((Number) row[9]).doubleValue(),  // total_fase
                 null  // posicao será calculada abaixo
             ));
         }
@@ -307,7 +314,7 @@ public class FaseService {
                 .getRight()
                 .stream()
                 .map(r -> new ResultadoFaseAtletaDto(r.getId(), r.getAtleta().getUuid(),
-                        r.getAtleta().getApelido() + " - " + r.getAtleta().getGrupo(), r.getNotaIndividual(),
+                        r.getAtleta().getApelido() + " - " + r.getAtleta().getGrupo(), r.getAtleta().getNumero(), r.getNotaIndividual(),
                         r.getNotaDupla(), r.getTotal(), r.getPosicao()))
                 .toList();
 

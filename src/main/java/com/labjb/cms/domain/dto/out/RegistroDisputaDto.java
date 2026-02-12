@@ -7,6 +7,7 @@ import java.util.UUID;
 public record RegistroDisputaDto(
         UUID id,
         String nomeAtleta,
+        Integer numeroAtleta,
         String apelidoAtleta,
         UUID atletaId,
         TipoRegistroDisputaEnum tipoRegistro

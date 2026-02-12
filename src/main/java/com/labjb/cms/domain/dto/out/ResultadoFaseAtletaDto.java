@@ -6,6 +6,7 @@ public record ResultadoFaseAtletaDto(
         Long id,
         UUID atletaUuid,
         String atletaNome,
+        Integer atletaNumero,
         Double notaIndividual,
         Double notaDupla,
         Double total,

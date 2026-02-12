@@ -27,6 +27,7 @@ public interface DisputaMapper extends BaseMaps<DisputaDto, Disputa, DisputaForm
                 .map(registro -> new RegistroDisputaDto(
                         registro.getUuid(),
                         registro.getAtleta().getNome(),
+                        registro.getAtleta().getNumero(),
                         registro.getAtleta().getApelido(),
                         registro.getAtleta().getUuid(),
                         registro.getTipoRegistro()

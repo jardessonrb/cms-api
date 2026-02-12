@@ -45,6 +45,13 @@ public class FaseController {
         return ResponseEntity.ok(faseService.atualizaFase(id, faseForm));
     }
 
+    @GetMapping("/{faseId}")
+    @Operation(summary = "Buscar fase por UUID", description = "Busca uma fase específica pelo seu UUID")
+    public ResponseEntity<FaseDto> buscarFasePorUuid(
+            @Parameter(description = "UUID da fase") @PathVariable UUID faseId) {
+        return ResponseEntity.ok(faseService.buscarFasePorUuid(faseId));
+    }
+
     @GetMapping("/categoria/{categoriaId}")
     @Operation(summary = "Listar fases por categoria", description = "Lista todas as fases de uma categoria específica paginadas")
     public ResponseEntity<Page<FaseDto>> listarFasesPorCategoria(

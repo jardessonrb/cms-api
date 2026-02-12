@@ -17,6 +17,7 @@ import com.labjb.cms.shared.mapper.FaseMapper;
 import com.labjb.cms.shared.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,8 @@ public class RodadaService {
         rodada.setFase(fase);
         rodada.setSituacao(SituacaoRodadaEnum.INICIADA);
 
-        return rodadaMapper.toDto(rodadaRepository.save(rodada));
+        Rodada rodadaSalva = rodadaRepository.save(rodada);
+        return rodadaMapper.toDto(rodadaSalva);
     }
 
     public RodadaDto atualizaRodada(UUID id, RodadaForm rodadaForm) {
@@ -54,13 +56,41 @@ public class RodadaService {
                 .orElseThrow(() -> new RuntimeException("Rodada não encontrada"));
 
         rodada.setNome(rodadaForm.nome());
-
-        return rodadaMapper.toDto(rodadaRepository.save(rodada));
+        Rodada rodadaSalva = rodadaRepository.save(rodada);
+        return rodadaMapper.toDto(rodadaSalva);
     }
 
     public Page<RodadaDto> listarRodadasPorFase(UUID faseId, String filtro, Pageable pageable) {
-        return rodadaRepository.findByFaseUuidWithFilter(faseId, filtro, pageable)
-                .map(rodadaMapper::toDto);
+        Page<Rodada> rodadasPage = rodadaRepository.findByFaseUuidWithFilter(faseId, filtro, pageable);
+        
+        return rodadasPage.map(rodada -> adicionaContagemDeDisputaDaRodada(rodada));
+    }
+
+    private @NonNull RodadaDto adicionaContagemDeDisputaDaRodada(Rodada rodada) {
+        // Buscar contagem de disputas para cada rodada
+        List<Object[]> disputasCount = rodadaRepository.findDisputasCountByRodadaId(rodada.getId());
+
+        Long disputasConcluidas = 0L;
+        Long disputasPendentes = 0L;
+
+        if (!disputasCount.isEmpty()) {
+            Object[] result = disputasCount.get(0);
+            disputasConcluidas = ((Number) result[1]).longValue();
+            disputasPendentes = ((Number) result[2]).longValue();
+        }
+
+        // Criar DTO com as contagens
+        RodadaDto dto = rodadaMapper.toDto(rodada);
+        return new RodadaDto(
+                dto.id(),
+                dto.nome(),
+                dto.situacao(),
+                dto.tipoRodada(),
+                dto.atletasParaProximaFase(),
+                dto.criadoEm(),
+                disputasConcluidas,
+                disputasPendentes
+        );
     }
 
     @Transactional
@@ -148,12 +178,13 @@ public class RodadaService {
         // Se for rodada de desempate, executar lógica específica
         if (rodada.getTipoRodada() == TipoRodadaEnum.DESEMPATE) {
             finalizarRodadaDesempate(rodada);
-            return rodadaMapper.toDto(rodadaRepository.save(rodada));
+            Rodada rodadaSalva = rodadaRepository.save(rodada);
+            return rodadaMapper.toDto(rodadaSalva);
         }
 
         rodada.setSituacao(SituacaoRodadaEnum.FINALIZADA);
-
-        return rodadaMapper.toDto(rodadaRepository.save(rodada));
+        Rodada rodadaSalva = rodadaRepository.save(rodada);
+        return rodadaMapper.toDto(rodadaSalva);
     }
 
     @Transactional

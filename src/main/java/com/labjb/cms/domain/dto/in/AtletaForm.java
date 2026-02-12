@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record AtletaForm(
         String nome,
+        Integer numero,
         String apelido,
         String responsavel,
         LocalDate dataNascimento,

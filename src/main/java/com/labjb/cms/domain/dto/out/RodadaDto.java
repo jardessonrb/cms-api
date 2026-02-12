@@ -12,6 +12,8 @@ public record RodadaDto(
         SituacaoRodadaEnum situacao,
         TipoRodadaEnum tipoRodada,
         Integer atletasParaProximaFase,
-        LocalDateTime criadoEm
+        LocalDateTime criadoEm,
+        Long disputasConcluidas,
+        Long disputasPendentes
 ) {
 }

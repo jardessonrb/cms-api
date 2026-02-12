@@ -36,6 +36,14 @@ public class AtletaService {
         Campeonato campeonato = campeonatoRepository.findByUuid(atletaForm.campeonatoId())
                 .orElseThrow(() -> new EntityNotFoundException("Campeonato não encontrado"));
 
+        // Validar se o número já existe no campeonato
+        if (atletaForm.numero() != null) {
+            atletaRepository.findByNumeroAndCampeonatoUuid(atletaForm.numero(), atletaForm.campeonatoId())
+                    .ifPresent(atleta -> {
+                        throw new RegraNegocioException("Já existe um atleta com o número " + atletaForm.numero() + " neste campeonato");
+                    });
+        }
+
         Atleta atleta = atletaMapper.toEntity(atletaForm);
         atleta.setCampeonato(campeonato);
         atleta = atletaRepository.save(atleta);
@@ -66,7 +74,16 @@ public class AtletaService {
         Atleta atleta = atletaRepository.findByUuid(id)
                 .orElseThrow(() -> new RuntimeException("Atleta não encontrado"));
 
+        // Validar se o número já existe no campeonato (apenas se for diferente do atual)
+        if (atletaForm.numero() != null && !atletaForm.numero().equals(atleta.getNumero())) {
+            atletaRepository.findByNumeroAndCampeonatoUuid(atletaForm.numero(), atleta.getCampeonato().getUuid())
+                    .ifPresent(atletaExistente -> {
+                        throw new RegraNegocioException("Já existe um atleta com o número " + atletaForm.numero() + " neste campeonato");
+                    });
+        }
+
         atleta.setNome(atletaForm.nome());
+        atleta.setNumero(atletaForm.numero());
         atleta.setApelido(atletaForm.apelido());
         atleta.setResponsavel(atletaForm.responsavel());
         atleta.setDataNascimento(atletaForm.dataNascimento());

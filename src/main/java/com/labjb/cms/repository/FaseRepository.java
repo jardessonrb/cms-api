@@ -17,7 +17,7 @@ import java.util.UUID;
 @Repository
 public interface FaseRepository extends JpaRepository<Fase, Long> {
     Optional<Fase> findByUuid(UUID id);
-    Page<Fase> findByCategoriaUuidOrderByOrdemDesc(UUID categoriaId, Pageable pageable);
+    Page<Fase>  findByCategoriaUuidOrderByOrdemDesc(UUID categoriaId, Pageable pageable);
     long countByCategoria(Categoria categoria);
 
     @Query("SELECT MAX(tf.ordem) FROM Fase tf WHERE tf.categoria.uuid = :categoriaId")
@@ -51,7 +51,8 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
             ta.id as atleta_id,
             npr.categoria,
             npr.fase,
-            (ta.apelido || ' - '|| ta.grupo) as atleta, 
+            (ta.apelido || ' - '|| ta.grupo) as atleta,
+            ta.numero as numero_competidor,
             ppa.partidas, 
             ppa.partidas_concluidas, 
             sum(npr.nota_dupla) as pontuacao_por_dupla, 
@@ -60,7 +61,7 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
             from notas_por_rodada npr
             join tb_atleta ta on npr.atleta_id = ta.id
             join partidas_por_atleta ppa on ppa.atleta_id = ta.id
-            group by ta.id, npr.categoria, npr.fase, ta.apelido, ta.grupo, ppa.partidas, ppa.partidas_concluidas
+            group by ta.id, npr.categoria, npr.fase, ta.apelido, ta.grupo, ta.numero, ppa.partidas, ppa.partidas_concluidas
             order by total_fase desc
             """, 
             nativeQuery = true)

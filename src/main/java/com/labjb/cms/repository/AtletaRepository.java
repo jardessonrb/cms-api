@@ -14,6 +14,7 @@ import java.util.UUID;
 @Repository
 public interface AtletaRepository extends JpaRepository<Atleta, Long> {
     Optional<Atleta> findByUuid(UUID id);
+    Optional<Atleta> findByNumeroAndCampeonatoUuid(Integer numero, UUID campeonatoId);
 
     @Query(value = """
             SELECT a FROM Atleta a
@@ -22,8 +23,9 @@ public interface AtletaRepository extends JpaRepository<Atleta, Long> {
                    LOWER(a.nome)     LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
                    LOWER(a.apelido)  LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
                    LOWER(a.responsavel)  LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
-                   LOWER(a.graduacao)LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')))
-            ORDER BY a.apelido ASC, a.nome ASC
+                   LOWER(a.graduacao)LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
+                   CAST(a.numero AS string) LIKE CONCAT('%', CAST(:filtro AS string), '%'))
+            ORDER BY a.numero ASC, a.apelido ASC, a.nome ASC
             """)
     Page<Atleta> findAllWithFilter(@Param("filtro") String filtro, @Param("campeonatoId") UUID campeonatoId, Pageable pageable);
 
@@ -35,8 +37,9 @@ public interface AtletaRepository extends JpaRepository<Atleta, Long> {
                    LOWER(a.nome)     LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
                    LOWER(a.apelido)  LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
                    LOWER(a.responsavel)  LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
-                   LOWER(a.graduacao)LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')))
-            ORDER BY a.apelido ASC, a.nome ASC
+                   LOWER(a.graduacao)LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
+                   CAST(a.numero AS string) LIKE CONCAT('%', CAST(:filtro AS string), '%'))
+            ORDER BY a.numero ASC, a.apelido ASC, a.nome ASC
             """)
     Page<Atleta> findAllByCategoriaWithFilter(@Param("filtro") String filtro, @Param("categoriaId") UUID categoriaId, Pageable pageable);
 
@@ -48,8 +51,9 @@ public interface AtletaRepository extends JpaRepository<Atleta, Long> {
                    LOWER(a.nome)     LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
                    LOWER(a.apelido)  LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
                    LOWER(a.responsavel)  LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
-                   LOWER(a.graduacao)LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')))
-            ORDER BY a.apelido ASC, a.nome ASC
+                   LOWER(a.graduacao)LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
+                   CAST(a.numero AS string) LIKE CONCAT('%', CAST(:filtro AS string), '%'))
+            ORDER BY a.numero ASC, a.apelido ASC, a.nome ASC
             """)
     Page<Atleta> findAllByFaseWithFilter(@Param("filtro") String filtro, @Param("faseId") UUID faseId, Pageable pageable);
 }
