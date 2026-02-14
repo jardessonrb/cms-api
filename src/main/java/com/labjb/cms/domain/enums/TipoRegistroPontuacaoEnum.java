@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum TipoRegistroDisputaEnum {
+public enum TipoRegistroPontuacaoEnum {
     
     PONTUADO("Pontuado"),
     NAO_PONTUADO("Não Pontuado");

@@ -38,14 +38,16 @@ public class NotaService {
         Disputa disputa = disputaRepository.findByUuid(disputaUuid)
                 .orElseThrow(() -> new RuntimeException("Disputa não encontrada"));
 
+
+        if (disputa.getTipoDisputa() == TipoDisputaEnum.INDIVIDUAL && form.atletas().size() != 1) {
+            throw new RegraNegocioException("Disputa do tipo INDIVIDUAL deve ter exatamente 1 atleta");
+        }
+
         // Validação do tipo de disputa
         if (disputa.getTipoDisputa() == TipoDisputaEnum.DUPLA) {
+
             if (form.atletas().size() != 2) {
                 throw new RegraNegocioException("Disputa do tipo DUPLA deve ter exatamente 2 atletas");
-            }
-        } else if (disputa.getTipoDisputa() == TipoDisputaEnum.INDIVIDUAL) {
-            if (form.atletas().size() != 1) {
-                throw new RegraNegocioException("Disputa do tipo INDIVIDUAL deve ter exatamente 1 atleta");
             }
         }
 

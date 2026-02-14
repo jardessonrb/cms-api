@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -30,10 +31,9 @@ public class DisputaController {
 
     @GetMapping("/rodada/{rodadaId}")
     @Operation(summary = "Listar disputas por rodada", description = "Lista disputas de uma rodada específica ordenadas por data de criação descendente")
-    public ResponseEntity<Page<DisputaDto>> listarDisputasPorRodada(
-            @Parameter(description = "UUID da rodada") @PathVariable UUID rodadaId,
-            @PageableDefault(size = 10, page = 0) Pageable pageable) {
-        return ResponseEntity.ok(disputaService.listarDisputasPorRodada(rodadaId, pageable));
+    public ResponseEntity<List<DisputaDto>> listarDisputasPorRodada(
+            @Parameter(description = "UUID da rodada") @PathVariable UUID rodadaId){
+        return ResponseEntity.ok(disputaService.listarDisputasPorRodada(rodadaId));
     }
 
     @GetMapping("/{id}")

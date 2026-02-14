@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,8 +17,8 @@ public interface DisputaRepository extends JpaRepository<Disputa, Long> {
 
     Optional<Disputa> findByUuid(UUID uuid);
 
-    @Query("SELECT d FROM Disputa d WHERE d.rodada.uuid = :rodadaUuid ORDER BY d.criadoEm DESC")
-    Page<Disputa> findByRodadaUuidOrderByCriadoEmDesc(@Param("rodadaUuid") UUID rodadaUuid, Pageable pageable);
+    @Query("SELECT d FROM Disputa d WHERE d.rodada.uuid = :rodadaUuid ORDER BY d.situacao DESC")
+    List<Disputa> findByRodadaUuidOrderByCriadoEmDesc(@Param("rodadaUuid") UUID rodadaUuid);
 
     @Query("SELECT COUNT(d) FROM Disputa d WHERE d.rodada.uuid = :rodadaUuid AND d.situacao != 'CONCLUIDA'")
     Long countDisputasNaoConcluidasByRodadaUuid(@Param("rodadaUuid") UUID rodadaUuid);

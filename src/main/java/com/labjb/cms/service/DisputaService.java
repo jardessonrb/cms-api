@@ -3,11 +3,15 @@ package com.labjb.cms.service;
 import com.labjb.cms.domain.dto.in.DisputaForm;
 import com.labjb.cms.domain.dto.out.DisputaDto;
 import com.labjb.cms.domain.enums.SituacaoDisputaEnum;
+import com.labjb.cms.domain.enums.TipoDisputaEnum;
+import com.labjb.cms.domain.enums.TipoRegistroPontuacaoEnum;
 import com.labjb.cms.domain.model.*;
 import com.labjb.cms.repository.AtletaRepository;
 import com.labjb.cms.repository.DisputaRepository;
 import com.labjb.cms.repository.RodadaRepository;
+import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.DisputaMapper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -27,9 +32,10 @@ public class DisputaService {
     private final AtletaRepository atletaRepository;
     private final DisputaMapper disputaMapper;
 
-    public Page<DisputaDto> listarDisputasPorRodada(UUID rodadaId, Pageable pageable) {
-        return disputaRepository.findByRodadaUuidOrderByCriadoEmDesc(rodadaId, pageable)
-                .map(disputaMapper::toDto);
+    public List<DisputaDto> listarDisputasPorRodada(UUID rodadaId) {
+        return disputaRepository.findByRodadaUuidOrderByCriadoEmDesc(rodadaId)
+                .stream().map(disputaMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     public DisputaDto buscarDisputaPorUuid(UUID uuid) {
@@ -43,30 +49,32 @@ public class DisputaService {
         Rodada rodada = rodadaRepository.findByUuid(rodadaId)
                 .orElseThrow(() -> new RuntimeException("Rodada não encontrada"));
 
-        Atleta atletaA = atletaRepository.findByUuid(disputaForm.atletaAId())
-                .orElseThrow(() -> new RuntimeException("Atleta A não encontrado"));
+        List<RegistroDisputa> registrosDisputa = disputaForm.atletas().stream().map(atletaForm -> {
+            Atleta atleta = atletaRepository
+                            .findByUuid(atletaForm.atletaId())
+                            .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado"));
 
-        Atleta atletaB = atletaRepository.findByUuid(disputaForm.atletaBId())
-                .orElseThrow(() -> new RuntimeException("Atleta B não encontrado"));
+            return RegistroDisputa.builder()
+                    .atleta(atleta)
+                    .tipoRegistro(atletaForm.tipoRegistroDisputa())
+                    .build();
+            }
+        ).collect(Collectors.toList());
 
         Disputa disputa = Disputa.builder()
                 .rodada(rodada)
                 .situacao(SituacaoDisputaEnum.PENDENTE)
+                .tipoDisputa(registrosDisputa.size() == 1 ? TipoDisputaEnum.INDIVIDUAL : TipoDisputaEnum.DUPLA)
                 .build();
 
-        RegistroDisputa registroDisputaA = RegistroDisputa.builder()
-                .atleta(atletaA)
-                .disputa(disputa)
-                .build();
+        registrosDisputa.stream().peek(registroDisputa -> registroDisputa.setDisputa(disputa));
+        boolean todosRegistrosSemPontuacao = registrosDisputa.stream().allMatch(registroDisputa -> registroDisputa.getTipoRegistro().equals(TipoRegistroPontuacaoEnum.NAO_PONTUADO));
 
-        RegistroDisputa registroDisputaB = RegistroDisputa.builder()
-                .atleta(atletaB)
-                .disputa(disputa)
-                .build();
+        if(todosRegistrosSemPontuacao){
+            throw new RegraNegocioException("Todas as disputas estão marcadas para não pontuada.");
+        }
 
-        disputa.setRegistroDisputas(new HashSet<>(List.of(registroDisputaA, registroDisputaB)));
-
-        Disputa disputaSalva = disputaRepository.save(disputa);
-        return disputaMapper.toDto(disputaSalva);
+        disputa.setRegistroDisputas(registrosDisputa.stream().collect(Collectors.toSet()));
+        return disputaMapper.toDto(disputaRepository.save(disputa));
     }
 }
