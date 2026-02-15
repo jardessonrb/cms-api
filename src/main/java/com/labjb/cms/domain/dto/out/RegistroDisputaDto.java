@@ -2,6 +2,7 @@ package com.labjb.cms.domain.dto.out;
 
 import com.labjb.cms.domain.enums.TipoRegistroPontuacaoEnum;
 
+import java.util.List;
 import java.util.UUID;
 
 public record RegistroDisputaDto(
@@ -10,6 +11,6 @@ public record RegistroDisputaDto(
         Integer numeroAtleta,
         String apelidoAtleta,
         UUID atletaId,
-        TipoRegistroPontuacaoEnum tipoRegistro
-) {
-}
+        TipoRegistroPontuacaoEnum tipoRegistro,
+        List<NotaDto> notas
+) {}

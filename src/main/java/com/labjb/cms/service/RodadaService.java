@@ -146,7 +146,7 @@ public class RodadaService {
             RegistroDisputa registroDisputaAtletaB = RegistroDisputa.builder().atleta(atletaB).disputa(disputa).tipoRegistro(disputaPareada.getRight().equals(0L) ? TipoRegistroPontuacaoEnum.NAO_PONTUADO : TipoRegistroPontuacaoEnum.PONTUADO).build();
 
             disputa.setRegistroDisputas(new HashSet<>(Arrays.asList(registroDisputaAtletaA, registroDisputaAtletaB)));
-            disputa.setTipoDisputa(disputa.getRegistroDisputas().stream().anyMatch(registro -> registro.getTipoRegistro().equals(TipoRegistroPontuacaoEnum.NAO_PONTUADO)) ? TipoDisputaEnum.INDIVIDUAL : TipoDisputaEnum.DUPLA);
+            disputa.setTipoDisputa(DisputaService.defineTipoDisputaComBaseEmRegistrosDisputa(disputa.getRegistroDisputas().stream().collect(Collectors.toList())));
             disputas.add(disputa);
         }
 

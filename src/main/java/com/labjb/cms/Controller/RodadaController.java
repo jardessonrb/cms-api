@@ -59,7 +59,7 @@ public class RodadaController {
         return ResponseEntity.ok(rodadaService.geraRodadasParaFase(faseId, rodadasForms));
     }
 
-    @PatchMapping("/{id}/finalizar")
+    @PutMapping("/{id}/finalizar")
     @Operation(summary = "Finalizar rodada", description = "Finaliza uma rodada existente")
     public ResponseEntity<RodadaDto> finalizarRodada(
             @Parameter(description = "UUID da rodada") @PathVariable UUID id) {

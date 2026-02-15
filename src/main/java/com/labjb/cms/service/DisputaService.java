@@ -64,17 +64,32 @@ public class DisputaService {
         Disputa disputa = Disputa.builder()
                 .rodada(rodada)
                 .situacao(SituacaoDisputaEnum.PENDENTE)
-                .tipoDisputa(registrosDisputa.size() == 1 ? TipoDisputaEnum.INDIVIDUAL : TipoDisputaEnum.DUPLA)
+                .tipoDisputa(defineTipoDisputaComBaseEmRegistrosDisputa(registrosDisputa))
+                .registroDisputas(registrosDisputa.stream().collect(Collectors.toSet()))
                 .build();
 
-        registrosDisputa.stream().peek(registroDisputa -> registroDisputa.setDisputa(disputa));
-        boolean todosRegistrosSemPontuacao = registrosDisputa.stream().allMatch(registroDisputa -> registroDisputa.getTipoRegistro().equals(TipoRegistroPontuacaoEnum.NAO_PONTUADO));
+        return disputaMapper.toDto(disputaRepository.save(disputa));
+    }
 
+    public static TipoDisputaEnum defineTipoDisputaComBaseEmRegistrosDisputa(List<RegistroDisputa> registrosDisputa){
+        boolean todosRegistrosSemPontuacao = registrosDisputa.stream().allMatch(registroDisputa -> registroDisputa.getTipoRegistro().equals(TipoRegistroPontuacaoEnum.NAO_PONTUADO));
         if(todosRegistrosSemPontuacao){
             throw new RegraNegocioException("Todas as disputas estão marcadas para não pontuada.");
         }
 
-        disputa.setRegistroDisputas(registrosDisputa.stream().collect(Collectors.toSet()));
-        return disputaMapper.toDto(disputaRepository.save(disputa));
+        if(registrosDisputa.size() == 1 && registrosDisputa.get(0).getTipoRegistro().equals(TipoRegistroPontuacaoEnum.PONTUADO)){
+            return TipoDisputaEnum.INDIVIDUAL;
+        }
+
+        if(registrosDisputa.size() == 2){
+            boolean possuiAlgumAtletaComRegistroDisputaParaNaoPontuado = registrosDisputa.stream().anyMatch(registroDisputa -> registroDisputa.getTipoRegistro().equals(TipoRegistroPontuacaoEnum.NAO_PONTUADO));
+            if(possuiAlgumAtletaComRegistroDisputaParaNaoPontuado){
+                return TipoDisputaEnum.INDIVIDUAL;
+            }else{
+                return TipoDisputaEnum.DUPLA;
+            }
+        }
+
+        throw new RegraNegocioException("Tipo de disputa não definido.");
     }
 }

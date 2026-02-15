@@ -26,6 +26,9 @@ public class RegistroDisputa extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private TipoRegistroPontuacaoEnum tipoRegistro;
 
+    @Builder.Default
+    private Boolean isRegistradoNotas = false;
+
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "registro_disputa_id")
     private Set<Nota> notas;

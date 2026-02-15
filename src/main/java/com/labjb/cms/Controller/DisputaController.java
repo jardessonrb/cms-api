@@ -54,11 +54,19 @@ public class DisputaController {
         return ResponseEntity.created(uri).body(disputaDto);
     }
 
-    @PostMapping("/{id}/registrar-notas")
+    @PostMapping("/{disputaId}/registrar-notas")
     @Operation(summary = "Registrar notas da disputa", description = "Registra as notas dos jurados para os atletas de uma disputa")
     public ResponseEntity<DisputaDto> registrarNotas(
-            @Parameter(description = "UUID da disputa") @PathVariable UUID id,
+            @Parameter(description = "UUID da disputa") @PathVariable UUID disputaId,
             @RequestBody RegistrarNotasForm registrarNotasForm) {
-        return ResponseEntity.ok(notaService.registrarNotas(id, registrarNotasForm));
+        return ResponseEntity.ok(notaService.registrarNotas(disputaId, registrarNotasForm));
+    }
+
+    @PutMapping("/{disputaId}/atualizar-notas")
+    @Operation(summary = "Atualizar notas da disputa", description = "Atualiza as notas dos jurados para os atletas de uma disputa existente")
+    public ResponseEntity<DisputaDto> atualizarNotas(
+            @Parameter(description = "UUID da disputa") @PathVariable UUID disputaId,
+            @RequestBody RegistrarNotasForm registrarNotasForm) {
+        return ResponseEntity.ok(notaService.atualizaNotasDisputa(disputaId, registrarNotasForm));
     }
 }
