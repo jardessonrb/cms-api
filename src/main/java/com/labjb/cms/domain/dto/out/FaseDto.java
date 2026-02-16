@@ -12,5 +12,7 @@ public record FaseDto(
         SituacaoFaseEnum situacao,
         CriterioEntrada criterioEntrada,
         Integer quantidadeAtletas,
-        Integer quantidadeAtletasInscritos
+        Integer quantidadeAtletasInscritos,
+        Integer ordem,
+        Integer quantidadeRodadas
 ) {}

@@ -99,10 +99,10 @@ public class RodadaService {
                 .orElseThrow(() -> new RuntimeException("Fase não encontrada"));
 
         // Verificar se já existem rodadas para esta fase
-//        Page<Rodada> rodadasExistentes = rodadaRepository.findByFaseUuidOrderByCriadoEmDesc(faseId, null);
-//        if (rodadasExistentes.hasContent()) {
-//            throw new RuntimeException("Já existem rodadas criadas para a fase informado");
-//        }
+        Page<Rodada> rodadasExistentes = rodadaRepository.findByFaseUuidOrderByCriadoEmDesc(faseId, null);
+        if (rodadasExistentes.hasContent()) {
+            throw new RuntimeException("Já existem rodadas criadas para a fase informado");
+        }
         // Buscar todos os atletas da fase
         List<Atleta> atletasDaFase = atletaRepository.findAllByFaseWithFilter(null, faseId, null).getContent();
 

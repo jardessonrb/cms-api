@@ -20,7 +20,7 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
     Page<Fase>  findByCategoriaUuidOrderByOrdemDesc(UUID categoriaId, Pageable pageable);
     long countByCategoria(Categoria categoria);
 
-    @Query("SELECT MAX(tf.ordem) FROM Fase tf WHERE tf.categoria.uuid = :categoriaId")
+    @Query("SELECT coalesce(MAX(tf.ordem), 0) FROM Fase tf WHERE tf.categoria.uuid = :categoriaId")
     Long findMaxOrdemByCategoriaUuid(UUID categoriaId);
 
     @Query(value = """

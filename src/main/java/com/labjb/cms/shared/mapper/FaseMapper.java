@@ -11,7 +11,8 @@ import org.mapstruct.Mappings;
 public interface FaseMapper extends BaseMaps<FaseDto, Fase, FaseForm> {
 
     @Mappings({
-            @Mapping(target = "id", source = "uuid")
+            @Mapping(target = "id", source = "uuid"),
+            @Mapping(target = "quantidadeRodadas", expression = "java(entity.getRodadas() != null ? entity.getRodadas().size() : 0)")
     })
     FaseDto toDto(Fase entity);
 }
