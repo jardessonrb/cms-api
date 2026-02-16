@@ -67,18 +67,18 @@ public class FaseController {
         return ResponseEntity.ok(faseService.buscarPontuacaoParcial(faseId));
     }
 
-    @PostMapping("/{faseId}/finalizar")
+    @PutMapping("/{faseId}/finalizar")
     @Operation(summary = "Finalizar fase", description = "Finaliza uma fase e salva os resultados dos atletas")
     public ResponseEntity<FaseDto> finalizarFase(
             @Parameter(description = "UUID da fase") @PathVariable UUID faseId) {
         return ResponseEntity.ok(faseService.finalizarFase(faseId));
     }
 
-    @PostMapping("/validar-corte")
+    @PostMapping("/fase-anterior/{faseAnteriorId}/atletas/{quantidadeAtletas}/validar-corte")
     @Operation(summary = "Validar corte de fase", description = "Valida se há empates na posição de corte para criação de nova fase")
     public ResponseEntity<ValidacaoCorteDto> validarCorte(
-            @Parameter(description = "UUID da fase anterior") @RequestParam UUID faseAnterior,
-            @Parameter(description = "Quantidade de atletas para o corte") @RequestParam Integer quantidadeAtletas) {
-        return ResponseEntity.ok(faseService.validaCorte(faseAnterior, quantidadeAtletas));
+            @Parameter(description = "UUID da fase anterior") @PathVariable(name = "faseAnteriorId") UUID faseAnteriorId,
+            @Parameter(description = "Quantidade de atletas para o corte") @PathVariable(name = "quantidadeAtletas") Integer quantidadeAtletas) {
+        return ResponseEntity.ok(faseService.validaCorte(faseAnteriorId, quantidadeAtletas));
     }
 }

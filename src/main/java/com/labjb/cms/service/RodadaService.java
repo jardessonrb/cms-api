@@ -122,6 +122,7 @@ public class RodadaService {
             rodada.setFase(fase);
             rodada.setSituacao(SituacaoRodadaEnum.CRIADA);
             rodada.setDisputas(geraDisputaParaARodada(disputas.get(i), atletasDaFase, rodada));
+            rodada.setTipoRodada(TipoRodadaEnum.NORMAL);
             Rodada rodadaSalva = rodadaRepository.save(rodada);
             rodadasCriadas.add(rodadaMapper.toDto(rodadaSalva));
         }

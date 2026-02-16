@@ -74,10 +74,10 @@ public class FaseService {
             if (faseForm.faseAnterior() == null) {
                 throw new RegraNegocioException("Critério N_PRIMEIROS exige uma fase anterior");
             }
-            
+
             Fase faseAnterior = faseRepository.findByUuid(faseForm.faseAnterior())
                     .orElseThrow(() -> new EntityNotFoundException("Fase anterior não encontrada"));
-            
+
             if (faseAnterior.getSituacao() != SituacaoFaseEnum.FINALIZADA) {
                 throw new RegraNegocioException("Fase anterior deve estar FINALIZADA para usar critério N_PRIMEIROS");
             }
@@ -85,53 +85,55 @@ public class FaseService {
             List<ResultadoFaseAtleta> resultadosDaFaseAnterior = resultadoFaseAtletaRepository.findByFaseUuidOrderByTotalDesc(faseForm.faseAnterior());
             // Buscar atletas classificados e empatados
             var atletasSeparados = separadorAtletasComponent.separaAtletasClassificadosEEmpatadosPorQuantidade(resultadosDaFaseAnterior, faseForm.quantidadeAtletas());
-            
+
             List<ResultadoFaseAtleta> atletasClassificadosDireto = atletasSeparados.getLeft();
             List<ResultadoFaseAtleta> atletasEmpatados = atletasSeparados.getRight();
 
             // Se houver atletas empatados, criar rodada de desempate na fase anterior
             if (!atletasEmpatados.isEmpty()) {
                 Integer atletasParaProximaFase = faseForm.quantidadeAtletas() - atletasClassificadosDireto.size();
-                
+
                 Rodada rodadaDesempate = Rodada.builder()
-                    .nome("Rodada de Desempate - " + faseAnterior.getNome())
-                    .situacao(SituacaoRodadaEnum.CRIADA)
-                    .tipoRodada(TipoRodadaEnum.DESEMPATE)
-                    .fase(faseAnterior)
-                    .atletasParaProximaFase(atletasParaProximaFase)
-                    .disputas(new HashSet<>())
-                    .build();
-                
+                        .nome("Rodada de Desempate - " + faseAnterior.getNome())
+                        .situacao(SituacaoRodadaEnum.CRIADA)
+                        .tipoRodada(TipoRodadaEnum.DESEMPATE)
+                        .fase(faseAnterior)
+                        .atletasParaProximaFase(atletasParaProximaFase)
+                        .disputas(new HashSet<>())
+                        .build();
+
                 // Criar disputas para cada atleta empatado
                 for (ResultadoFaseAtleta atletaEmpatado : atletasEmpatados) {
                     Disputa disputa = Disputa.builder()
-                        .situacao(SituacaoDisputaEnum.PENDENTE)
-                        .rodada(rodadaDesempate)
-                        .registroDisputas(new HashSet<>())
-                        .build();
-                    
+                            .situacao(SituacaoDisputaEnum.PENDENTE)
+                            .rodada(rodadaDesempate)
+                            .registroDisputas(new HashSet<>())
+                            .build();
+
                     // Criar registro de disputa para o atleta
                     RegistroDisputa registroDisputa = RegistroDisputa.builder()
-                        .atleta(atletaEmpatado.getAtleta())
-                        .disputa(disputa)
-                        .notas(new HashSet<>())
-                        .build();
-                    
+                            .atleta(atletaEmpatado.getAtleta())
+                            .disputa(disputa)
+                            .notas(new HashSet<>())
+                            .build();
+
                     disputa.getRegistroDisputas().add(registroDisputa);
                     rodadaDesempate.getDisputas().add(disputa);
                 }
-                
+
                 // Salvar a rodada de desempate na fase anterior
                 rodadaRepository.save(rodadaDesempate);
-                
+
                 // Criar fase com situação AGUARDANDO_DESEMPATE contendo os atletas classificados direto
                 fase.setSituacao(SituacaoFaseEnum.AGUARDANDO_DESEMPATE);
                 fase.setAtletas(atletasClassificadosDireto.stream()
                         .map(ResultadoFaseAtleta::getAtleta)
                         .collect(Collectors.toSet()));
+
+                faseAnterior.setSituacao(SituacaoFaseEnum.INICIADA);
+                faseRepository.save(faseAnterior);
             }
         }
-
         return faseMapper.toDto(faseRepository.save(fase));
     }
 
@@ -201,7 +203,7 @@ public class FaseService {
                     ));
                 } else {
                     // Total diferente, nova posição
-                    posicaoAtual = i + 1;
+                    posicaoAtual++;
                     resultadoFinal.add(new PontuacaoParcialDto(
                         atual.atletaId(),
                         atual.categoria(), atual.fase(), atual.competidor(), atual.numeroCompetidor(),
@@ -246,8 +248,8 @@ public class FaseService {
                 .orElseThrow(() -> new EntityNotFoundException("Fase não encontrada"));
 
         // Verificar se a fase está INICIADA
-        if (fase.getSituacao() != SituacaoFaseEnum.INICIADA) {
-            throw new RegraNegocioException("Fase deve estar com situação INICIADA para ser finalizada");
+        if (fase.getSituacao() == SituacaoFaseEnum.FINALIZADA) {
+            throw new RegraNegocioException("A fase já encontra-se finalizada.");
         }
 
         // Verificar se todas as rodadas estão FINALIZADAS
