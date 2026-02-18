@@ -9,6 +9,6 @@ public class Utils {
     }
 
     public static int geraValorEntreZeroAndValorMaximo(int valorMaximo){
-        return ThreadLocalRandom.current().nextInt(0, valorMaximo + 1);
+        return ThreadLocalRandom.current().nextInt(0, valorMaximo);
     }
 }
