@@ -3,8 +3,8 @@ package com.labjb.cms.service;
 import com.labjb.cms.component.GeradorDeDisputas;
 import com.labjb.cms.component.SeparadorAtletasComponent;
 import com.labjb.cms.domain.dto.in.RodadaForm;
-import com.labjb.cms.domain.dto.out.RodadaDto;
 import com.labjb.cms.domain.dto.out.FaseDto;
+import com.labjb.cms.domain.dto.out.RodadaDto;
 import com.labjb.cms.domain.enums.*;
 import com.labjb.cms.domain.model.*;
 import com.labjb.cms.repository.AtletaRepository;
@@ -12,12 +12,11 @@ import com.labjb.cms.repository.DisputaRepository;
 import com.labjb.cms.repository.FaseRepository;
 import com.labjb.cms.repository.RodadaRepository;
 import com.labjb.cms.shared.errors.exception.RegraNegocioException;
-import com.labjb.cms.shared.mapper.RodadaMapper;
 import com.labjb.cms.shared.mapper.FaseMapper;
+import com.labjb.cms.shared.mapper.RodadaMapper;
 import com.labjb.cms.shared.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -66,7 +65,7 @@ public class RodadaService {
         return rodadasPage.map(rodada -> adicionaContagemDeDisputaDaRodada(rodada));
     }
 
-    private @NonNull RodadaDto adicionaContagemDeDisputaDaRodada(Rodada rodada) {
+    private RodadaDto adicionaContagemDeDisputaDaRodada(Rodada rodada) {
         // Buscar contagem de disputas para cada rodada
         List<Object[]> disputasCount = rodadaRepository.findDisputasCountByRodadaId(rodada.getId());
 

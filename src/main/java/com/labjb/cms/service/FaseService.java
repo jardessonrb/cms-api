@@ -4,38 +4,22 @@ import com.labjb.cms.component.SeparadorAtletasComponent;
 import com.labjb.cms.domain.dto.in.FaseForm;
 import com.labjb.cms.domain.dto.out.FaseDto;
 import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
-import com.labjb.cms.domain.dto.out.ValidacaoCorteDto;
 import com.labjb.cms.domain.dto.out.ResultadoFaseAtletaDto;
+import com.labjb.cms.domain.dto.out.ValidacaoCorteDto;
 import com.labjb.cms.domain.enums.*;
-import com.labjb.cms.domain.model.Fase;
-import com.labjb.cms.domain.model.Categoria;
-import com.labjb.cms.domain.model.Atleta;
-import com.labjb.cms.domain.model.ResultadoFaseAtleta;
-import com.labjb.cms.domain.model.Rodada;
-import com.labjb.cms.domain.model.Disputa;
-import com.labjb.cms.domain.model.RegistroDisputa;
-import com.labjb.cms.repository.FaseRepository;
-import com.labjb.cms.repository.CategoriaRepository;
-import com.labjb.cms.repository.AtletaRepository;
-import com.labjb.cms.repository.ResultadoFaseAtletaRepository;
-import com.labjb.cms.repository.RodadaRepository;
+import com.labjb.cms.domain.model.*;
+import com.labjb.cms.repository.*;
 import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.FaseMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -220,7 +204,7 @@ public class FaseService {
         return resultadoFinal;
     }
 
-    private @NonNull List<PontuacaoParcialDto> extraiPontuacaoFase(Fase fase) {
+    private List<PontuacaoParcialDto> extraiPontuacaoFase(Fase fase) {
         List<Object[]> resultados = faseRepository.findPontuacaoParcialByFaseId(fase.getId());
 
         List<PontuacaoParcialDto> pontuacoes = new ArrayList<>();
