@@ -37,4 +37,6 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
     List<Object[]> findCategoriaWithQuantidadesByUuid(@Param("id") Long id);
 
     Optional<Categoria> findByUuidAndCampeonatoUuid(UUID categoriaId, UUID campeonatoId);
+    
+    Optional<Categoria> findByCampeonatoIdAndNomeIgnoreCase(Long campeonatoId, String nome);
 }

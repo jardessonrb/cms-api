@@ -14,6 +14,8 @@ public record AtletaDto(
         String cidade,
         String grupo,
         String graduacao,
-        LocalDateTime criadoEm
+        LocalDateTime criadoEm,
+        UUID categoriaId,
+        String categoria
 ) {
 }

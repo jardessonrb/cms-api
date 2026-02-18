@@ -16,4 +16,7 @@ public interface InscricaoCategoriaRepository extends JpaRepository<InscricaoCat
     Optional<InscricaoCategoria> findByAtletaAndCategoria(@Param("atletaId") UUID atletaId, @Param("categoriaId") UUID categoriaId);
     
     void deleteByAtletaUuidAndCategoriaUuid(UUID atletaId, UUID categoriaId);
+    
+    @Query("DELETE FROM InscricaoCategoria ic WHERE ic.atleta.uuid = :atletaId AND ic.categoria.campeonato.uuid = :campeonatoId")
+    void deleteAllByAtletaAndCampeonato(@Param("atletaId") UUID atletaId, @Param("campeonatoId") UUID campeonatoId);
 }

@@ -2,6 +2,7 @@ package com.labjb.cms.Controller;
 
 import com.labjb.cms.domain.dto.in.AtletaForm;
 import com.labjb.cms.domain.dto.out.AtletaDto;
+import com.labjb.cms.domain.dto.out.RetornoImportacaoAtletasDto;
 import com.labjb.cms.service.AtletaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -10,8 +11,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
@@ -73,5 +76,14 @@ public class AtletaController {
     public ResponseEntity<AtletaDto> visualizarAtleta(
             @Parameter(description = "UUID do atleta") @PathVariable UUID id) {
         return ResponseEntity.ok(atletaService.visualizarAtleta(id));
+    }
+
+    @PostMapping(value = "/campeonato/{campeonatoId}/importar", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @Operation(summary = "Importar atletas de CSV", description = "Importa uma lista de atletas a partir de um arquivo CSV")
+    public ResponseEntity<RetornoImportacaoAtletasDto> importarAtletas(
+            @Parameter(description = "Arquivo CSV com dados dos atletas") @RequestParam("file") MultipartFile file,
+            @PathVariable(name = "campeonatoId") UUID campeonatoId) {
+        RetornoImportacaoAtletasDto retornoImportacaoAtletasDto = atletaService.processaArquivoImportacaoAtletasCSV(campeonatoId, file);
+        return ResponseEntity.ok(retornoImportacaoAtletasDto);
     }
 }

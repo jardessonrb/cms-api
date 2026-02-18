@@ -1,7 +1,12 @@
 package com.labjb.cms.service;
 
 import com.labjb.cms.domain.dto.in.AtletaForm;
+import com.labjb.cms.domain.dto.in.CategoriaForm;
 import com.labjb.cms.domain.dto.out.AtletaDto;
+import com.labjb.cms.domain.dto.out.AtletaImportacaoDto;
+import com.labjb.cms.domain.dto.out.CategoriaDto;
+import com.labjb.cms.domain.dto.out.RetornoImportacaoAtletasDto;
+import com.labjb.cms.domain.enums.SituacaoCategoriaEnum;
 import com.labjb.cms.domain.enums.SituacaoInscricaoCategoriaEnum;
 import com.labjb.cms.domain.model.Atleta;
 import com.labjb.cms.domain.model.Campeonato;
@@ -17,10 +22,12 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @RequiredArgsConstructor
 @Service
@@ -31,6 +38,8 @@ public class AtletaService {
     private final InscricaoCategoriaRepository inscricaoCategoriaRepository;
     private final CampeonatoRepository campeonatoRepository;
     private final AtletaMapper atletaMapper;
+    private final ImportacaoAtletasService importacaoAtletasService;
+    private final CategoriaService categoriaService;
 
     public AtletaDto criaAtleta(AtletaForm atletaForm) {
         Campeonato campeonato = campeonatoRepository.findByUuid(atletaForm.campeonatoId())
@@ -58,9 +67,32 @@ public class AtletaService {
     private void inscreveAtletaNaCategoria(AtletaForm atletaForm, Atleta atleta) {
         Categoria categoria = categoriaRepository
                 .findByUuidAndCampeonatoUuid(atletaForm.categoriaId(), atletaForm.campeonatoId())
-                .orElse(null);
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada no campeonato para o id informado"));
 
-        if(Objects.nonNull(categoria)){
+        Optional<InscricaoCategoria> inscricaoCategoria = inscricaoCategoriaRepository.findByAtletaAndCategoria(atleta.getUuid(), categoria.getUuid());
+        if(inscricaoCategoria.isPresent()){
+            return;
+        }
+
+        InscricaoCategoria inscricao = InscricaoCategoria.builder()
+                .atleta(atleta)
+                .categoria(categoria)
+                .situacao(SituacaoInscricaoCategoriaEnum.ATIVO)
+                .build();
+        inscricaoCategoriaRepository.save(inscricao);
+    }
+
+    private void atualizaInscricaoDeAtletaNaCategoria(AtletaForm atletaForm, Atleta atleta) {
+        Categoria categoria = categoriaRepository
+                .findByUuidAndCampeonatoUuid(atletaForm.categoriaId(), atletaForm.campeonatoId())
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada no campeonato para o id informado"));
+
+        Optional<InscricaoCategoria> inscricaoCategoria = atleta.getInscricoesCategoria().stream().findFirst();
+        if(inscricaoCategoria.isPresent()){
+            InscricaoCategoria inscricaoCategoriaAtual = inscricaoCategoria.get();
+            inscricaoCategoriaAtual.setCategoria(categoria);
+            inscricaoCategoriaRepository.save(inscricaoCategoriaAtual);
+        }else{
             InscricaoCategoria inscricao = InscricaoCategoria.builder()
                     .atleta(atleta)
                     .categoria(categoria)
@@ -70,6 +102,7 @@ public class AtletaService {
         }
     }
 
+    @Transactional
     public AtletaDto atualizaAtleta(UUID id, AtletaForm atletaForm) {
         Atleta atleta = atletaRepository.findByUuid(id)
                 .orElseThrow(() -> new RuntimeException("Atleta não encontrado"));
@@ -90,6 +123,10 @@ public class AtletaService {
         atleta.setCidade(atletaForm.cidade());
         atleta.setGrupo(atletaForm.grupo());
         atleta.setGraduacao(atletaForm.graduacao());
+
+        if(Objects.nonNull(atletaForm.categoriaId())){
+            atualizaInscricaoDeAtletaNaCategoria(atletaForm, atleta);
+        }
 
         return atletaMapper.toDto(atletaRepository.save(atleta));
     }
@@ -113,5 +150,80 @@ public class AtletaService {
         return atletaRepository.findByUuid(id)
                 .map(atletaMapper::toDto)
                 .orElseThrow(() -> new RuntimeException("Atleta não encontrado"));
+    }
+
+    @Transactional
+//    @Async
+    public RetornoImportacaoAtletasDto processaArquivoImportacaoAtletasCSV(UUID campeonatoId, MultipartFile file) {
+        Campeonato campeonato = campeonatoRepository.findByUuid(campeonatoId)
+                .orElseThrow(() -> new EntityNotFoundException("Campeonato não encontrado"));
+
+        List<AtletaImportacaoDto> atletas = importarAtletas(file);
+        Map<String, Categoria> categorias = new HashMap<>();
+        int contadorDeAtletasCriados = 0;
+        int contadorDeCategoriasCriadas = 0;
+        for(AtletaImportacaoDto atletaImportacao : atletas){
+
+            try{
+                if(!categorias.containsKey(atletaImportacao.categoria())){
+                    Optional<Categoria> categoriaPorNomeOpt = categoriaRepository.findByCampeonatoIdAndNomeIgnoreCase(campeonato.getId(), atletaImportacao.categoria());
+                    if(categoriaPorNomeOpt.isPresent()){
+                        categorias.put(atletaImportacao.categoria(), categoriaPorNomeOpt.get());
+                    }else{
+                        Categoria novaCategoria = new Categoria();
+                        novaCategoria.setCampeonato(campeonato);
+                        novaCategoria.setNome(atletaImportacao.categoria());
+                        novaCategoria.setSituacao(SituacaoCategoriaEnum.CRIADA);
+                        novaCategoria = categoriaRepository.save(novaCategoria);
+                        categorias.put(atletaImportacao.categoria(), novaCategoria);
+                        contadorDeCategoriasCriadas++;
+                    }
+                }
+
+                AtletaForm atletaForm = new AtletaForm(
+                        atletaImportacao.nomeCompleto(),
+                        atletaRepository.findMaxNumeroByCampeonatoUuid(campeonatoId) + 1,
+                        atletaImportacao.apelido(),
+                        atletaImportacao.nomeApelidoProfessorMestre(),
+                        atletaImportacao.dataNascimento(),
+                        atletaImportacao.cidade(),
+                        atletaImportacao.grupoEscola(),
+                        atletaImportacao.graduacaoCorda(),
+                        campeonato.getUuid(),
+                        categorias.get(atletaImportacao.categoria()).getUuid()
+                );
+
+                criaAtleta(atletaForm);
+                contadorDeAtletasCriados++;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return new RetornoImportacaoAtletasDto(contadorDeCategoriasCriadas, contadorDeAtletasCriados, atletas.size());
+    }
+
+    public CategoriaDto criaCategoriaPorNome(CategoriaForm categoriaForm){
+        return categoriaService.criaCategoria(categoriaForm);
+    }
+
+    public List<AtletaImportacaoDto> importarAtletas(MultipartFile file) {
+        validarArquivoImportacao(file);
+        
+        try {
+            return importacaoAtletasService.parseCsvFile(file);
+        } catch (Exception e) {
+            throw new RegraNegocioException("Erro ao processar arquivo CSV: " + e.getMessage());
+        }
+    }
+
+    private void validarArquivoImportacao(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new RegraNegocioException("Arquivo não pode estar vazio");
+        }
+
+        if (!file.getOriginalFilename().endsWith(".csv")) {
+            throw new RegraNegocioException("Arquivo deve ter extensão .csv");
+        }
     }
 }

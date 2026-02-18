@@ -56,4 +56,7 @@ public interface AtletaRepository extends JpaRepository<Atleta, Long> {
             ORDER BY a.numero ASC, a.apelido ASC, a.nome ASC
             """)
     Page<Atleta> findAllByFaseWithFilter(@Param("filtro") String filtro, @Param("faseId") UUID faseId, Pageable pageable);
+    
+    @Query("SELECT coalesce(MAX(a.numero), 0) FROM Atleta a WHERE a.campeonato.uuid = :campeonatoId")
+    Integer findMaxNumeroByCampeonatoUuid(@Param("campeonatoId") UUID campeonatoId);
 }

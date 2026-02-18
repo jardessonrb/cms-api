@@ -6,8 +6,7 @@ import com.labjb.cms.domain.dto.out.FaseDto;
 import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
 import com.labjb.cms.domain.dto.out.ValidacaoCorteDto;
 import com.labjb.cms.domain.dto.out.ResultadoFaseAtletaDto;
-import com.labjb.cms.domain.enums.CriterioEntrada;
-import com.labjb.cms.domain.enums.SituacaoFaseEnum;
+import com.labjb.cms.domain.enums.*;
 import com.labjb.cms.domain.model.Fase;
 import com.labjb.cms.domain.model.Categoria;
 import com.labjb.cms.domain.model.Atleta;
@@ -15,9 +14,6 @@ import com.labjb.cms.domain.model.ResultadoFaseAtleta;
 import com.labjb.cms.domain.model.Rodada;
 import com.labjb.cms.domain.model.Disputa;
 import com.labjb.cms.domain.model.RegistroDisputa;
-import com.labjb.cms.domain.enums.SituacaoRodadaEnum;
-import com.labjb.cms.domain.enums.SituacaoDisputaEnum;
-import com.labjb.cms.domain.enums.TipoRodadaEnum;
 import com.labjb.cms.repository.FaseRepository;
 import com.labjb.cms.repository.CategoriaRepository;
 import com.labjb.cms.repository.AtletaRepository;
@@ -82,6 +78,10 @@ public class FaseService {
                 throw new RegraNegocioException("Fase anterior deve estar FINALIZADA para usar critério N_PRIMEIROS");
             }
 
+            if(faseAnterior.getRodadas().stream().anyMatch(rodada -> rodada.getTipoRodada().equals(TipoRodadaEnum.DESEMPATE))){
+                throw new RegraNegocioException(String.format("Fase %s já possui uma rodada de desempate.", faseAnterior.getNome()));
+            }
+
             List<ResultadoFaseAtleta> resultadosDaFaseAnterior = resultadoFaseAtletaRepository.findByFaseUuidOrderByTotalDesc(faseForm.faseAnterior());
             // Buscar atletas classificados e empatados
             var atletasSeparados = separadorAtletasComponent.separaAtletasClassificadosEEmpatadosPorQuantidade(resultadosDaFaseAnterior, faseForm.quantidadeAtletas());
@@ -107,6 +107,7 @@ public class FaseService {
                     Disputa disputa = Disputa.builder()
                             .situacao(SituacaoDisputaEnum.PENDENTE)
                             .rodada(rodadaDesempate)
+                            .tipoDisputa(TipoDisputaEnum.INDIVIDUAL)
                             .registroDisputas(new HashSet<>())
                             .build();
 
@@ -114,6 +115,7 @@ public class FaseService {
                     RegistroDisputa registroDisputa = RegistroDisputa.builder()
                             .atleta(atletaEmpatado.getAtleta())
                             .disputa(disputa)
+                            .tipoRegistro(TipoRegistroPontuacaoEnum.PONTUADO)
                             .notas(new HashSet<>())
                             .build();
 
@@ -320,6 +322,6 @@ public class FaseService {
                         r.getNotaDupla(), r.getTotal(), r.getPosicao()))
                 .toList();
 
-        return new ValidacaoCorteDto(atletasEmpatados.size(), atletasEmpatados);
+        return new ValidacaoCorteDto(2, atletasEmpatados);
     }
 }

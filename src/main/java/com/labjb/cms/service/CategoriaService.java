@@ -12,7 +12,9 @@ import com.labjb.cms.repository.CategoriaRepository;
 import com.labjb.cms.repository.CampeonatoRepository;
 import com.labjb.cms.repository.InscricaoCategoriaRepository;
 import com.labjb.cms.repository.AtletaRepository;
+import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.CategoriaMapper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -91,19 +93,19 @@ public class CategoriaService {
 
     public void inscreveAtletaEmCategoria(UUID categoriaId, UUID atletaId) {
         Categoria categoria = categoriaRepository.findByUuid(categoriaId)
-                .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada"));
 
         Atleta atleta = atletaRepository.findByUuid(atletaId)
-                .orElseThrow(() -> new RuntimeException("Atleta não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado"));
 
         // Verificar se o atleta pertence ao mesmo campeonato da categoria
         if (!atleta.getCampeonato().getUuid().equals(categoria.getCampeonato().getUuid())) {
-            throw new RuntimeException("Atleta não pertence ao mesmo campeonato da categoria");
+            throw new RegraNegocioException("Atleta não pertence ao mesmo campeonato da categoria");
         }
 
         // Verificar se já existe inscrição
-        if (inscricaoCategoriaRepository.findByAtletaAndCategoria(atletaId, categoriaId).isPresent()) {
-            throw new RuntimeException("Atleta já inscrito nesta categoria");
+        if (!atleta.getInscricoesCategoria().isEmpty()) {
+            throw new RegraNegocioException(String.format("Atleta já está inscrito em uma categoria %s", atleta.getInscricoesCategoria().stream().findFirst().get().getCategoria().getNome()));
         }
 
         // Criar inscrição
