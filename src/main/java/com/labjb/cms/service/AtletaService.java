@@ -6,6 +6,7 @@ import com.labjb.cms.domain.dto.out.AtletaDto;
 import com.labjb.cms.domain.dto.out.AtletaImportacaoDto;
 import com.labjb.cms.domain.dto.out.CategoriaDto;
 import com.labjb.cms.domain.dto.out.RetornoImportacaoAtletasDto;
+import com.labjb.cms.domain.enums.SituacaoAtletaEnum;
 import com.labjb.cms.domain.enums.SituacaoCategoriaEnum;
 import com.labjb.cms.domain.enums.SituacaoInscricaoCategoriaEnum;
 import com.labjb.cms.domain.model.Atleta;
@@ -131,18 +132,18 @@ public class AtletaService {
         return atletaMapper.toDto(atletaRepository.save(atleta));
     }
 
-    public Page<AtletaDto> listarAtletas(String filtro, UUID campeonatoId, Pageable pageable) {
-        return atletaRepository.findAllWithFilter(filtro, campeonatoId, pageable)
+    public Page<AtletaDto> listarAtletas(String filtro, UUID campeonatoId, SituacaoAtletaEnum situacao, Pageable pageable) {
+        return atletaRepository.findAllWithFilter(filtro, campeonatoId, situacao, pageable)
                 .map(atletaMapper::toDto);
     }
 
-    public Page<AtletaDto> listarAtletasPorCategoria(String filtro, UUID categoriaId, Pageable pageable) {
-        return atletaRepository.findAllByCategoriaWithFilter(filtro, categoriaId, pageable)
+    public Page<AtletaDto> listarAtletasPorCategoria(String filtro, UUID categoriaId, SituacaoAtletaEnum situacao, Pageable pageable) {
+        return atletaRepository.findAllByCategoriaWithFilter(filtro, categoriaId, situacao, pageable)
                 .map(atletaMapper::toDto);
     }
 
-    public Page<AtletaDto> listarAtletasPorFase(String filtro, UUID faseId, Pageable pageable) {
-        return atletaRepository.findAllByFaseWithFilter(filtro, faseId, pageable)
+    public Page<AtletaDto> listarAtletasPorFase(String filtro, UUID faseId, SituacaoAtletaEnum situacao, Pageable pageable) {
+        return atletaRepository.findAllByFaseWithFilter(filtro, faseId, situacao, pageable)
                 .map(atletaMapper::toDto);
     }
 
@@ -215,6 +216,21 @@ public class AtletaService {
         } catch (Exception e) {
             throw new RegraNegocioException("Erro ao processar arquivo CSV: " + e.getMessage());
         }
+    }
+
+    @Transactional
+    public void cancelarAtleta(UUID atletaUuid) {
+        Atleta atleta = atletaRepository.findByUuid(atletaUuid)
+                .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado"));
+
+        if (atleta.getSituacao() == SituacaoAtletaEnum.CANCELADO) {
+            throw new RegraNegocioException("Atleta já está cancelado");
+        }
+
+        atleta.setSituacao(SituacaoAtletaEnum.CANCELADO);
+        atletaRepository.save(atleta);
+        atletaRepository.atualizaRegistroDisputaParaNaoPontuado(atleta.getId());
+        atletaRepository.atualizaDisputaConformeTipoRegistroDisputa(atleta.getId());
     }
 
     private void validarArquivoImportacao(MultipartFile file) {

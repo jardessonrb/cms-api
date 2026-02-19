@@ -1,5 +1,8 @@
 package com.labjb.cms.domain.model;
 
+import com.labjb.cms.domain.enums.SituacaoAtletaEnum;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,6 +30,10 @@ public class Atleta extends BaseEntity {
     private String cidade;
     private String grupo;
     private String graduacao;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private SituacaoAtletaEnum situacao = SituacaoAtletaEnum.ATIVO;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "campeonato_id")

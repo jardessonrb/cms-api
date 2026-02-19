@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @RequiredArgsConstructor
-//@RestControllerAdvice
+@RestControllerAdvice
 public class ExceptionHandlerAdvice {
 
     private final List<ExceptionHandlerStrategy> exceptionHandlerStrategies;

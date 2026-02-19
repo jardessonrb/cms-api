@@ -26,7 +26,7 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
     @Query(value = """
         with notas_por_rodada as (
         	select tf.nome as fase, tc.nome as categoria,
-        	tr.id as rodada_id, trd.atleta_id, avg(tn.nota_da_dupla) as nota_dupla, avg(tn.nota_do_atleta) as nota_atleta,\s
+        	tr.id as rodada_id, trd.atleta_id, avg(tn.nota_da_dupla) as nota_dupla, avg(tn.nota_do_atleta) as nota_atleta,
         	(avg(tn.nota_da_dupla) + avg(tn.nota_do_atleta)) as total_por_rodada
         	from tb_nota tn
         	right join tb_registro_disputa trd on tn.registro_disputa_id = trd.id
@@ -39,7 +39,7 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
         ),
         --select * from notas_por_rodada;
         partidas_por_atleta as (
-        	select ta.id as atleta_id,\s
+        	select ta.id as atleta_id,
         	count(distinct td.id) as partidas,
         	count(case when td.situacao = 'CONCLUIDA' then 1 end) as partidas_concluidas
         	from tb_registro_disputa trd
@@ -51,15 +51,16 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
         --select * from partidas_por_atleta;
         select
         ta.id as atleta_id,
+        ta.situacao as situacao,
         npr.categoria,
         npr.fase,
         (ta.apelido || ' - '|| ta.grupo) as atleta,
         ta.numero as numero_competidor,
-        ppa.partidas,\s
-        ppa.partidas_concluidas,\s
-        coalesce(sum(npr.nota_dupla), 0) as pontuacao_por_dupla,\s
-        coalesce(sum(npr.nota_atleta), 0) as pontuacao_por_atleta,\s
-        coalesce(sum(npr.total_por_rodada), 0) as total_fase\s
+        ppa.partidas,
+        ppa.partidas_concluidas,
+        coalesce(sum(npr.nota_dupla), 0) as pontuacao_por_dupla,
+        coalesce(sum(npr.nota_atleta), 0) as pontuacao_por_atleta,
+        coalesce(sum(npr.total_por_rodada), 0) as total_fase
         from notas_por_rodada npr
         join tb_atleta ta on npr.atleta_id = ta.id
         join partidas_por_atleta ppa on ppa.atleta_id = ta.id

@@ -46,7 +46,7 @@ public class FaseService {
 
         // Se critério for TODOS, adicionar todos os atletas da categoria
         if (faseForm.criterioEntrada() == CriterioEntrada.TODOS) {
-            List<Atleta> atletasCategoria = atletaRepository.findAllByCategoriaWithFilter(null, faseForm.categoriaId(), null)
+            List<Atleta> atletasCategoria = atletaRepository.findAllByCategoriaWithFilter(null, faseForm.categoriaId(), SituacaoAtletaEnum.ATIVO, null)
                     .getContent();
             fase.setAtletas(atletasCategoria.stream().collect(Collectors.toSet()));
         } else if (faseForm.criterioEntrada() == CriterioEntrada.N_PRIMEIROS) {
@@ -66,7 +66,11 @@ public class FaseService {
                 throw new RegraNegocioException(String.format("Fase %s já possui uma rodada de desempate.", faseAnterior.getNome()));
             }
 
-            List<ResultadoFaseAtleta> resultadosDaFaseAnterior = resultadoFaseAtletaRepository.findByFaseUuidOrderByTotalDesc(faseForm.faseAnterior());
+            List<ResultadoFaseAtleta> resultadosDaFaseAnterior = resultadoFaseAtletaRepository.findByFaseUuidOrderByTotalDesc(faseForm.faseAnterior())
+                    .stream()
+                    .filter(resultado -> resultado.getAtleta().getSituacao() == SituacaoAtletaEnum.ATIVO)
+                    .collect(Collectors.toList());
+
             // Buscar atletas classificados e empatados
             var atletasSeparados = separadorAtletasComponent.separaAtletasClassificadosEEmpatadosPorQuantidade(resultadosDaFaseAnterior, faseForm.quantidadeAtletas());
 
@@ -112,14 +116,16 @@ public class FaseService {
 
                 // Criar fase com situação AGUARDANDO_DESEMPATE contendo os atletas classificados direto
                 fase.setSituacao(SituacaoFaseEnum.AGUARDANDO_DESEMPATE);
-                fase.setAtletas(atletasClassificadosDireto.stream()
-                        .map(ResultadoFaseAtleta::getAtleta)
-                        .collect(Collectors.toSet()));
 
                 faseAnterior.setSituacao(SituacaoFaseEnum.INICIADA);
                 faseRepository.save(faseAnterior);
             }
+
+            fase.setAtletas(atletasClassificadosDireto.stream()
+                    .map(ResultadoFaseAtleta::getAtleta)
+                    .collect(Collectors.toSet()));
         }
+
         return faseMapper.toDto(faseRepository.save(fase));
     }
 
@@ -164,6 +170,7 @@ public class FaseService {
             PontuacaoParcialDto primeiro = pontuacoes.get(0);
             resultadoFinal.add(new PontuacaoParcialDto(
                 primeiro.atletaId(),
+                primeiro.situacao(),
                 primeiro.categoria(), primeiro.fase(), primeiro.competidor(), primeiro.numeroCompetidor(),
                 primeiro.partidas(), primeiro.partidasConcluidas(), 
                 primeiro.notaIndividual(), primeiro.notaDupla(), primeiro.total(),
@@ -182,6 +189,7 @@ public class FaseService {
                     // Mesmo total, mesma posição
                     resultadoFinal.add(new PontuacaoParcialDto(
                         atual.atletaId(),
+                        atual.situacao(),
                         atual.categoria(), atual.fase(), atual.competidor(), atual.numeroCompetidor(),
                         atual.partidas(), atual.partidasConcluidas(), 
                         atual.notaIndividual(), atual.notaDupla(), atual.total(),
@@ -192,6 +200,7 @@ public class FaseService {
                     posicaoAtual++;
                     resultadoFinal.add(new PontuacaoParcialDto(
                         atual.atletaId(),
+                        atual.situacao(),
                         atual.categoria(), atual.fase(), atual.competidor(), atual.numeroCompetidor(),
                         atual.partidas(), atual.partidasConcluidas(), 
                         atual.notaIndividual(), atual.notaDupla(), atual.total(),
@@ -212,15 +221,16 @@ public class FaseService {
         for (Object[] row : resultados) {
             pontuacoes.add(new PontuacaoParcialDto(
                 ((Number) row[0]).longValue(),  // atletaId
-                (String) row[1],  // categoria
-                (String) row[2],  // fase
-                (String) row[3],  // competidor
-                row[4] != null ? ((Number) row[4]).intValue() : null,  // numeroCompetidor
-                ((Number) row[5]).longValue(),  // partidas
-                ((Number) row[6]).longValue(),  // partidas_concluidas
-                ((Number) row[7]).doubleValue(),  // pontuacao_por_dupla
-                ((Number) row[8]).doubleValue(),  // pontuacao_por_atleta
-                ((Number) row[9]).doubleValue(),  // total_fase
+                (String) row[1],  // situacao
+                (String) row[2],  // categoria
+                (String) row[3],  // fase
+                (String) row[4],  // competidor
+                row[5] != null ? ((Number) row[5]).intValue() : null,  // numeroCompetidor
+                ((Number) row[6]).longValue(),  // partidas
+                ((Number) row[7]).longValue(),  // partidas_concluidas
+                ((Number) row[8]).doubleValue(),  // pontuacao_por_dupla
+                ((Number) row[9]).doubleValue(),  // pontuacao_por_atleta
+                ((Number) row[10]).doubleValue(),  // total_fase
                 null  // posicao será calculada abaixo
             ));
         }
@@ -244,31 +254,28 @@ public class FaseService {
             throw new RegraNegocioException("Todas as rodadas devem estar FINALIZADAS para finalizar a fase");
         }
 
-        // Buscar pontuação parcial
-        List<PontuacaoParcialDto> pontuacoes = buscarPontuacaoParcial(faseId);
-
-        // Criar mapa com chave sendo o ID do atleta
-        Map<Long, PontuacaoParcialDto> pontuacaoMap = pontuacoes.stream()
-                .collect(Collectors.toMap(PontuacaoParcialDto::atletaId, dto -> dto));
-
-        // Limpar resultados existentes (se houver)
-        resultadoFaseAtletaRepository.deleteByFaseUuid(faseId);
-
         // Salvar resultados para cada atleta da fase
-        for (Atleta atleta : fase.getAtletas()) {
-            PontuacaoParcialDto pontuacao = pontuacaoMap.get(atleta.getId());
-            
-            if (pontuacao != null) {
-                ResultadoFaseAtleta resultado = ResultadoFaseAtleta.builder()
-                        .fase(fase)
-                        .atleta(atleta)
-                        .notaIndividual(pontuacao.notaIndividual())
-                        .notaDupla(pontuacao.notaDupla())
-                        .total(pontuacao.total())
-                        .posicao(pontuacao.posicao())
-                        .build();
-                
-                resultadoFaseAtletaRepository.save(resultado);
+        if(fase.getResultados().isEmpty()){
+            List<PontuacaoParcialDto> pontuacoes = buscarPontuacaoParcial(faseId);
+
+            Map<Long, PontuacaoParcialDto> pontuacaoMap = pontuacoes.stream()
+                    .collect(Collectors.toMap(PontuacaoParcialDto::atletaId, dto -> dto));
+
+            for (Atleta atleta : fase.getAtletas()) {
+                PontuacaoParcialDto pontuacao = pontuacaoMap.get(atleta.getId());
+
+                if (pontuacao != null) {
+                    ResultadoFaseAtleta resultado = ResultadoFaseAtleta.builder()
+                            .fase(fase)
+                            .atleta(atleta)
+                            .notaIndividual(pontuacao.notaIndividual())
+                            .notaDupla(pontuacao.notaDupla())
+                            .total(pontuacao.total())
+                            .posicao(pontuacao.posicao())
+                            .build();
+
+                    resultadoFaseAtletaRepository.save(resultado);
+                }
             }
         }
 
@@ -293,6 +300,7 @@ public class FaseService {
         List<ResultadoFaseAtleta> resultados = resultadoFaseAtletaRepository
                 .findByFaseUuidOrderByTotalDesc(faseAnteriorUuid)
                 .stream()
+                .filter(resultado -> resultado.getAtleta().getSituacao() == SituacaoAtletaEnum.ATIVO)
                 .sorted((a, b) -> Double.compare(b.getTotal(), a.getTotal()))
                 .toList();
 
@@ -306,6 +314,6 @@ public class FaseService {
                         r.getNotaDupla(), r.getTotal(), r.getPosicao()))
                 .toList();
 
-        return new ValidacaoCorteDto(2, atletasEmpatados);
+        return new ValidacaoCorteDto(atletasEmpatados.size(), atletasEmpatados);
     }
 }

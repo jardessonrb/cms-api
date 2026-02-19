@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum SituacaoDisputaEnum {
 
     PENDENTE("Pendente"),
-    CONCLUIDA("Concluída");
+    CONCLUIDA("Concluída"),
+    CANCELADA("Cancelada");
 
     private String descricao;
 }

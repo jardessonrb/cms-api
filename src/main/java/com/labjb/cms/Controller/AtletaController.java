@@ -3,6 +3,7 @@ package com.labjb.cms.Controller;
 import com.labjb.cms.domain.dto.in.AtletaForm;
 import com.labjb.cms.domain.dto.out.AtletaDto;
 import com.labjb.cms.domain.dto.out.RetornoImportacaoAtletasDto;
+import com.labjb.cms.domain.enums.SituacaoAtletaEnum;
 import com.labjb.cms.service.AtletaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,8 +50,9 @@ public class AtletaController {
     public ResponseEntity<Page<AtletaDto>> listarAtletas(
             @Parameter(description = "Filtro para busca por nome, apelido ou graduação") @RequestParam(required = false) String filtro,
             @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId,
+            @Parameter(description = "Situação do atleta (ATIVO ou CANCELADO)") @RequestParam(required = false) SituacaoAtletaEnum situacao,
             @PageableDefault(size = 10, page = 0) Pageable pageable) {
-        return ResponseEntity.ok(atletaService.listarAtletas(filtro, campeonatoId, pageable));
+        return ResponseEntity.ok(atletaService.listarAtletas(filtro, campeonatoId, situacao, pageable));
     }
 
     @GetMapping("/categoria/{categoriaId}")
@@ -58,8 +60,9 @@ public class AtletaController {
     public ResponseEntity<Page<AtletaDto>> listarAtletasPorCategoria(
             @Parameter(description = "Filtro para busca por nome, apelido ou graduação") @RequestParam(required = false) String filtro,
             @Parameter(description = "UUID da categoria") @PathVariable UUID categoriaId,
+            @Parameter(description = "Situação do atleta (ATIVO ou CANCELADO)") @RequestParam(required = false) SituacaoAtletaEnum situacao,
             @PageableDefault(size = 10, page = 0) Pageable pageable) {
-        return ResponseEntity.ok(atletaService.listarAtletasPorCategoria(filtro, categoriaId, pageable));
+        return ResponseEntity.ok(atletaService.listarAtletasPorCategoria(filtro, categoriaId, situacao, pageable));
     }
 
     @GetMapping("/fase/{faseId}")
@@ -67,8 +70,9 @@ public class AtletaController {
     public ResponseEntity<Page<AtletaDto>> listarAtletasPorFase(
             @Parameter(description = "Filtro para busca por nome, apelido ou graduação") @RequestParam(required = false) String filtro,
             @Parameter(description = "UUID da fase") @PathVariable UUID faseId,
+            @Parameter(description = "Situação do atleta (ATIVO ou CANCELADO)") @RequestParam(required = false) SituacaoAtletaEnum situacao,
             @PageableDefault(size = 10, page = 0) Pageable pageable) {
-        return ResponseEntity.ok(atletaService.listarAtletasPorFase(filtro, faseId, pageable));
+        return ResponseEntity.ok(atletaService.listarAtletasPorFase(filtro, faseId, situacao, pageable));
     }
 
     @GetMapping("/{id}")
@@ -85,5 +89,12 @@ public class AtletaController {
             @PathVariable(name = "campeonatoId") UUID campeonatoId) {
         RetornoImportacaoAtletasDto retornoImportacaoAtletasDto = atletaService.processaArquivoImportacaoAtletasCSV(campeonatoId, file);
         return ResponseEntity.ok(retornoImportacaoAtletasDto);
+    }
+
+    @PutMapping("/{atletaId}/cancelar")
+    @Operation(summary = "Cancela atleta", description = "Cancela um atleta por uuid")
+    public ResponseEntity<Void> cancelarAtleta(@Parameter(description = "UUID do atleta") @PathVariable UUID atletaId){
+        atletaService.cancelarAtleta(atletaId);
+        return ResponseEntity.ok().build();
     }
 }

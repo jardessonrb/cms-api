@@ -42,12 +42,24 @@ public class RodadaService {
         Fase fase = faseRepository.findByUuid(rodadaForm.faseId())
                 .orElseThrow(() -> new RuntimeException("Fase não encontrada"));
 
+        // Buscar todos os atletas da fase
+        List<Atleta> atletasDaFase = atletaRepository.findAllByFaseWithFilter(null, rodadaForm.faseId(), SituacaoAtletaEnum.ATIVO, null).getContent();
+
+        if(atletasDaFase.isEmpty()){
+            throw new RegraNegocioException("A fase informada não possui competidores");
+        }
+
+        List<Long> atletasIds = atletasDaFase.stream().map(atleta -> atleta.getId()).toList();
+        int quantidadeRodadas = 1;
+
+        List<List<Pair<Long, Long>>> disputas = geradorDeDisputas.geraDisputas(geradorDeDisputas.embaralha(atletasIds), quantidadeRodadas);
+
         Rodada rodada = rodadaMapper.toEntity(rodadaForm);
         rodada.setFase(fase);
-        rodada.setSituacao(SituacaoRodadaEnum.INICIADA);
-
-        Rodada rodadaSalva = rodadaRepository.save(rodada);
-        return rodadaMapper.toDto(rodadaSalva);
+        rodada.setSituacao(SituacaoRodadaEnum.CRIADA);
+        rodada.setDisputas(geraDisputaParaARodada(disputas.get(0), atletasDaFase, rodada));
+        rodada.setTipoRodada(TipoRodadaEnum.NORMAL);
+        return rodadaMapper.toDto( rodadaRepository.save(rodada));
     }
 
     public RodadaDto atualizaRodada(UUID id, RodadaForm rodadaForm) {
@@ -103,7 +115,7 @@ public class RodadaService {
             throw new RuntimeException("Já existem rodadas criadas para a fase informado");
         }
         // Buscar todos os atletas da fase
-        List<Atleta> atletasDaFase = atletaRepository.findAllByFaseWithFilter(null, faseId, null).getContent();
+        List<Atleta> atletasDaFase = atletaRepository.findAllByFaseWithFilter(null, faseId, SituacaoAtletaEnum.ATIVO, null).getContent();
 
         if(atletasDaFase.isEmpty()){
             throw new RegraNegocioException("A fase informada não possui competidores");
