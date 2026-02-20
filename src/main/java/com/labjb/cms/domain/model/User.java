@@ -34,6 +34,10 @@ public class User extends BaseEntity implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<UserRole> roles;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grupo_id")
+    private Grupo grupo;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Objects.isNull(roles) ? new ArrayList<>() : roles.stream()
