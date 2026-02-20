@@ -5,6 +5,7 @@ import com.labjb.cms.domain.dto.out.CampeonatoDto;
 import com.labjb.cms.domain.dto.out.CampeonatoDetalhadoDto;
 import com.labjb.cms.domain.enums.SituacaoCampeonatoEnum;
 import com.labjb.cms.domain.model.Campeonato;
+import com.labjb.cms.domain.model.User;
 import com.labjb.cms.repository.CampeonatoRepository;
 import com.labjb.cms.shared.mapper.CampeonatoMapper;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class CampeonatoService {
 
     private final CampeonatoRepository campeonatoRepository;
     private final CampeonatoMapper campeonatoMapper;
+    private final AuthService authService;
 
     public CampeonatoDto criaCampeonato(CampeonatoForm campeonatoForm){
         Campeonato campeonato = campeonatoMapper.toEntity(campeonatoForm);
@@ -37,6 +39,10 @@ public class CampeonatoService {
     }
 
     public Page<CampeonatoDto> listarCampeonatos(Pageable pageable) {
+        User usuarioAutenticado = authService.obtemUsuarioAutenticado();
+        
+        System.out.println(usuarioAutenticado.toString());
+        
         return campeonatoRepository.findAllByOrderByCriadoEmDesc(pageable)
                 .map(campeonatoMapper::toDto);
     }

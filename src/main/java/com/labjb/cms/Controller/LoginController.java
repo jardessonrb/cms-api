@@ -30,15 +30,15 @@ public class LoginController {
     @Operation(summary = "Realizar login", description = "Autentica usuário e retorna token JWT")
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginForm loginForm) {
         try {
-            return userService.findByEmailAndPassword(loginForm.getEmail(), loginForm.getPassword())
+            return userService.findByEmailAndPassword(loginForm.getEmail(), loginForm.getSenha())
                     .map(user -> {
                         String token = jwtService.generateToken(user);
-                        return ResponseEntity.ok(new LoginResponseDto(token));
+                        return ResponseEntity.ok(new LoginResponseDto(user.getName(), user.getEmail(), token));
                     })
                     .orElseThrow(() -> new EntityNotFoundException("Nenhum usuário encontrado"));
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Erro no login");
+            throw new RuntimeException("Erro ao efetuar login");
         }
     }
 
@@ -48,7 +48,7 @@ public class LoginController {
         try {
             User newUser = userService.createUser(
                 loginForm.getEmail(), 
-                loginForm.getPassword(), 
+                loginForm.getSenha(),
                 loginForm.getNome() // Usando email como nome por enquanto
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(new UsuarioDto(newUser.getName(), newUser.getEmail()));

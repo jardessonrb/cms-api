@@ -18,8 +18,8 @@ public class LoginForm {
     private String email;
 
     @NotBlank(message = "Senha é obrigatória")
-    private String password;
+    private String senha;
 
-    @NotBlank(message = "Nome é obrigatório")
+//    @NotBlank(message = "Nome é obrigatório")
     private String nome;
 }

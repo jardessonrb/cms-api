@@ -65,4 +65,14 @@ public class User extends BaseEntity implements UserDetails {
     public boolean isEnabled() {
         return getAtivo();
     }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", name='" + name + '\'' +
+                ", roles=" + roles +
+                '}';
+    }
 }
