@@ -25,8 +25,16 @@ public class CampeonatoService {
     private final AuthService authService;
 
     public CampeonatoDto criaCampeonato(CampeonatoForm campeonatoForm){
+        User usuarioAutenticado = authService.obtemUsuarioAutenticado();
+        
+        if (usuarioAutenticado.getGrupo() == null) {
+            throw new RuntimeException("Usuário não pertence a nenhum grupo");
+        }
+        
         Campeonato campeonato = campeonatoMapper.toEntity(campeonatoForm);
         campeonato.setSituacao(SituacaoCampeonatoEnum.CRIADO);
+        campeonato.setGrupo(usuarioAutenticado.getGrupo());
+        
         return campeonatoMapper.toDto(campeonatoRepository.save(campeonato));
     }
 
@@ -41,15 +49,28 @@ public class CampeonatoService {
     public Page<CampeonatoDto> listarCampeonatos(Pageable pageable) {
         User usuarioAutenticado = authService.obtemUsuarioAutenticado();
         
-        System.out.println(usuarioAutenticado.toString());
+        if (usuarioAutenticado.getGrupo() == null) {
+            throw new RuntimeException("Usuário não pertence a nenhum grupo");
+        }
         
-        return campeonatoRepository.findAllByOrderByCriadoEmDesc(pageable)
+        return campeonatoRepository.findByGrupoOrderByCriadoEmDesc(usuarioAutenticado.getGrupo(), pageable)
                 .map(campeonatoMapper::toDto);
     }
 
     public CampeonatoDetalhadoDto buscarCampeonatoPorUuid(UUID uuid) {
+        User usuarioAutenticado = authService.obtemUsuarioAutenticado();
+        
+        if (usuarioAutenticado.getGrupo() == null) {
+            throw new RuntimeException("Usuário não pertence a nenhum grupo");
+        }
+        
         Campeonato campeonato = campeonatoRepository.findByUuid(uuid)
                 .orElseThrow(() -> new RuntimeException("Campeonato não encontrado"));
+
+        // Validar se o campeonato pertence ao grupo do usuário
+        if (!campeonato.getGrupo().getId().equals(usuarioAutenticado.getGrupo().getId())) {
+            throw new RuntimeException("Campeonato não encontrado");
+        }
 
         List<Object[]> quantidadePorCampeonatoById = campeonatoRepository.findQuantidadePorCampeonatoById(campeonato.getId());
         Object[] valores = quantidadePorCampeonatoById.get(0);

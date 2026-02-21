@@ -1,6 +1,7 @@
 package com.labjb.cms.Controller;
 
 import com.labjb.cms.domain.dto.in.LoginForm;
+import com.labjb.cms.domain.dto.in.UsuarioGrupoForm;
 import com.labjb.cms.domain.dto.out.LoginResponseDto;
 import com.labjb.cms.domain.dto.out.UsuarioDto;
 import com.labjb.cms.service.JwtService;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -57,5 +59,13 @@ public class LoginController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @PostMapping("/register-in-group")
+    @Operation(summary = "Criar usuário em grupo", description = "Cria um novo usuário em um grupo específico (apenas ADMIN)")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioDto> registerUserInGroup(@Valid @RequestBody UsuarioGrupoForm form) {
+        User newUser = userService.createUserInGroup(form);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new UsuarioDto(newUser.getName(), newUser.getEmail()));
     }
 }

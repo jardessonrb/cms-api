@@ -39,7 +39,12 @@ public class GrupoService {
         grupo.setProprietario(proprietario);
         grupo.getUsuarios().add(proprietario);
 
+        // Associar o grupo ao usuário proprietário (relacionamento de membro)
         proprietario.setGrupo(grupo);
+        
+        // Associar o grupo como proprietário do usuário (relacionamento de propriedade)
+        proprietario.setGrupoProprietario(grupo);
+        
         Grupo savedGrupo = grupoRepository.save(grupo);
 
         return new GrupoDto(

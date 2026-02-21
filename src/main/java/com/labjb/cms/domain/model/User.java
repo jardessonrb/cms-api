@@ -38,6 +38,9 @@ public class User extends BaseEntity implements UserDetails {
     @JoinColumn(name = "grupo_id")
     private Grupo grupo;
 
+    @OneToOne(mappedBy = "proprietario", fetch = FetchType.LAZY)
+    private Grupo grupoProprietario;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Objects.isNull(roles) ? new ArrayList<>() : roles.stream()

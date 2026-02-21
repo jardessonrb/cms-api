@@ -1,6 +1,7 @@
 package com.labjb.cms.repository;
 
 import com.labjb.cms.domain.model.Campeonato;
+import com.labjb.cms.domain.model.Grupo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,7 @@ import java.util.UUID;
 public interface CampeonatoRepository extends JpaRepository<Campeonato, Long> {
     Optional<Campeonato> findByUuid(UUID id);
     Page<Campeonato> findAllByOrderByCriadoEmDesc(Pageable pageable);
+    Page<Campeonato> findByGrupoOrderByCriadoEmDesc(Grupo grupo, Pageable pageable);
     
     @Query(value = """
         SELECT tc.id,
