@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.labjb</groupId>
 	<artifactId>cms</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>cms</name>
 	<description>Projeto para gerenciamento de campeonantos. Championship manager system-CMS</description>
 	<url/>
