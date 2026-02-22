@@ -8,5 +8,5 @@ public record FaseForm(
         CriterioEntrada criterioEntrada,
         Integer quantidadeAtletas,
         UUID categoriaId,
-        UUID faseAnterior
+        UUID faseAnteriorId
 ) {}

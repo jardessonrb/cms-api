@@ -51,11 +51,11 @@ public class FaseService {
             fase.setAtletas(atletasCategoria.stream().collect(Collectors.toSet()));
         } else if (faseForm.criterioEntrada() == CriterioEntrada.N_PRIMEIROS) {
             // Para N_PRIMEIROS, validar que existe fase anterior e está finalizada
-            if (faseForm.faseAnterior() == null) {
+            if (faseForm.faseAnteriorId() == null) {
                 throw new RegraNegocioException("Critério N_PRIMEIROS exige uma fase anterior");
             }
 
-            Fase faseAnterior = faseRepository.findByUuid(faseForm.faseAnterior())
+            Fase faseAnterior = faseRepository.findByUuid(faseForm.faseAnteriorId())
                     .orElseThrow(() -> new EntityNotFoundException("Fase anterior não encontrada"));
 
             if (faseAnterior.getSituacao() != SituacaoFaseEnum.FINALIZADA) {
@@ -66,7 +66,7 @@ public class FaseService {
                 throw new RegraNegocioException(String.format("Fase %s já possui uma rodada de desempate.", faseAnterior.getNome()));
             }
 
-            List<ResultadoFaseAtleta> resultadosDaFaseAnterior = resultadoFaseAtletaRepository.findByFaseUuidOrderByTotalDesc(faseForm.faseAnterior())
+            List<ResultadoFaseAtleta> resultadosDaFaseAnterior = resultadoFaseAtletaRepository.findByFaseUuidOrderByTotalDesc(faseForm.faseAnteriorId())
                     .stream()
                     .filter(resultado -> resultado.getAtleta().getSituacao() == SituacaoAtletaEnum.ATIVO)
                     .collect(Collectors.toList());
@@ -115,6 +115,7 @@ public class FaseService {
                 rodadaRepository.save(rodadaDesempate);
 
                 // Criar fase com situação AGUARDANDO_DESEMPATE contendo os atletas classificados direto
+                fase.setFaseAnterior(faseAnterior);
                 fase.setSituacao(SituacaoFaseEnum.AGUARDANDO_DESEMPATE);
 
                 faseAnterior.setSituacao(SituacaoFaseEnum.INICIADA);

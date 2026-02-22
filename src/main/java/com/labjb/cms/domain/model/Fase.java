@@ -36,6 +36,10 @@ public class Fase extends BaseEntity {
 
     private Integer quantidadeAtletas;
 
+    @OneToOne
+    @JoinColumn(name = "fase_anterior_id")
+    private Fase faseAnterior;
+
     @ManyToMany
     @JoinTable(
         name = "tb_fase_atleta",

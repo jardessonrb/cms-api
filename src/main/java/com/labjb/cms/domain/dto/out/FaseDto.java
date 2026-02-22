@@ -14,5 +14,6 @@ public record FaseDto(
         Integer quantidadeAtletas,
         Integer quantidadeAtletasInscritos,
         Integer ordem,
-        Integer quantidadeRodadas
+        Integer quantidadeRodadas,
+        FaseDto faseAnterior
 ) {}
