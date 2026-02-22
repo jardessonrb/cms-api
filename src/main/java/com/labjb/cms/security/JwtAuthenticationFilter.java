@@ -30,6 +30,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
@@ -81,6 +86,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     
     private boolean requiresAuthentication(HttpServletRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return false;
+        }
+
         String path = request.getRequestURI();
         return !path.equals("/auth/login") &&
                !path.equals("/auth/register") &&
