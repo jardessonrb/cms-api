@@ -35,13 +35,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        
+
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userEmail;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             if (requiresAuthentication(request)) {
+                handleError(response, 401, "Token JWT não encontrado no cabeçalho Authorization");
                 throw new JwtTokenMissingException("Token JWT não encontrado no cabeçalho Authorization");
             }
             filterChain.doFilter(request, response);
@@ -53,6 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             userEmail = jwtService.extractUsername(jwt);
         } catch (Exception e) {
+            handleError(response, 401, "Token JWT inválido ou Expirado");
             throw new JwtTokenInvalidException("Token JWT inválido: " + e.getMessage());
         }
 
@@ -62,6 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 userDetails = this.userDetailsService.loadUserByUsername(userEmail);
             } catch (Exception e) {
+                handleError(response, 403, "Usuário não encontrado ou sem permissão.");
                 throw new JwtTokenInvalidException("Usuário não encontrado: " + e.getMessage());
             }
 
@@ -75,9 +78,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
+                    handleError(response, 401, "Token JWT inválido ou expirado");
                     throw new JwtTokenInvalidException("Token JWT inválido ou expirado");
                 }
             } catch (Exception e) {
+                handleError(response, 403, "Erro na validação do token");
                 throw new JwtTokenInvalidException("Erro na validação do token: " + e.getMessage());
             }
         }
@@ -97,5 +102,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                !path.startsWith("/swagger-ui") && 
                !path.equals("/swagger-ui.html") &&
                !path.equals("/actuator/health");
+    }
+    private void handleError(HttpServletResponse response, int status, String mensagem) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"mensagem\": \"" + mensagem + "\"}");
     }
 }

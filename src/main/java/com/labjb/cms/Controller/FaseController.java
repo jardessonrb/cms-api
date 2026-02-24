@@ -53,11 +53,12 @@ public class FaseController {
     }
 
     @GetMapping("/categoria/{categoriaId}")
-    @Operation(summary = "Listar fases por categoria", description = "Lista todas as fases de uma categoria específica paginadas")
+    @Operation(summary = "Listar fases por categoria", description = "Lista todas as fases de uma categoria específica paginadas com filtro opcional por nome ou ordem")
     public ResponseEntity<Page<FaseDto>> listarFasesPorCategoria(
             @Parameter(description = "UUID da categoria") @PathVariable UUID categoriaId,
+            @Parameter(description = "Filtro opcional para buscar por nome ou ordem da fase") @RequestParam(required = false) String filtro,
             @PageableDefault(size = 10, page = 0) Pageable pageable) {
-        return ResponseEntity.ok(faseService.listarFasesPorCategoria(categoriaId, pageable));
+        return ResponseEntity.ok(faseService.listarFasesPorCategoria(categoriaId, filtro, pageable));
     }
 
     @GetMapping("/{faseId}/pontuacao-parcial")

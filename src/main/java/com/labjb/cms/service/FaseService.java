@@ -151,8 +151,8 @@ public class FaseService {
         return faseMapper.toDto(fase);
     }
 
-    public Page<FaseDto> listarFasesPorCategoria(UUID categoriaId, Pageable pageable) {
-        return faseRepository.findByCategoriaUuidOrderByOrdemDesc(categoriaId, pageable)
+    public Page<FaseDto> listarFasesPorCategoria(UUID categoriaId, String filtro, Pageable pageable) {
+        return faseRepository.findByCategoriaUuidOrderByOrdemDesc(filtro, categoriaId, pageable)
                 .map(faseMapper::toDto);
     }
 

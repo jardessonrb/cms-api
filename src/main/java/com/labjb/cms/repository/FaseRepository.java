@@ -17,7 +17,15 @@ import java.util.UUID;
 @Repository
 public interface FaseRepository extends JpaRepository<Fase, Long> {
     Optional<Fase> findByUuid(UUID id);
-    Page<Fase>  findByCategoriaUuidOrderByOrdemDesc(UUID categoriaId, Pageable pageable);
+    @Query(value = """
+            SELECT f FROM Fase f
+            WHERE f.categoria.uuid = :categoriaId
+              AND (:filtro IS NULL OR
+                   LOWER(f.nome) LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
+                   CAST(f.ordem AS string) LIKE CONCAT('%', CAST(:filtro AS string), '%'))
+            ORDER BY f.ordem DESC
+            """)
+    Page<Fase> findByCategoriaUuidOrderByOrdemDesc(@Param("filtro") String filtro, @Param("categoriaId") UUID categoriaId, Pageable pageable);
     long countByCategoria(Categoria categoria);
 
     @Query("SELECT coalesce(MAX(tf.ordem), 0) FROM Fase tf WHERE tf.categoria.uuid = :categoriaId")

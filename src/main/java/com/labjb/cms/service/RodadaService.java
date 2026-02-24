@@ -259,7 +259,7 @@ public class RodadaService {
 
         // Buscar fase que está aguardando desempate (próxima fase na mesma categoria)
         Fase faseAnterior = rodada.getFase();
-        List<Fase> fasesCategoria = faseRepository.findByCategoriaUuidOrderByOrdemDesc(faseAnterior.getCategoria().getUuid(), null)
+        List<Fase> fasesCategoria = faseRepository.findByCategoriaUuidOrderByOrdemDesc(null, faseAnterior.getCategoria().getUuid(), null)
                 .getContent()
                 .stream()
                 .filter(f -> f.getOrdem() > faseAnterior.getOrdem())
