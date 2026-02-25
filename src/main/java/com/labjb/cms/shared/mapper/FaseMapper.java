@@ -12,7 +12,8 @@ public interface FaseMapper extends BaseMaps<FaseDto, Fase, FaseForm> {
 
     @Mappings({
             @Mapping(target = "id", source = "uuid"),
-            @Mapping(target = "quantidadeRodadas", expression = "java(entity.getRodadas() != null ? entity.getRodadas().size() : 0)")
+            @Mapping(target = "quantidadeRodadas", expression = "java(entity.getRodadas() != null ? entity.getRodadas().size() : 0)"),
+            @Mapping(target = "isCompartilhada", source = "isCompartilhada")
     })
     FaseDto toDto(Fase entity);
 }

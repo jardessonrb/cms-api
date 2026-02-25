@@ -54,4 +54,7 @@ public class Fase extends BaseEntity {
     @OneToMany(mappedBy = "fase")
     private Set<ResultadoFaseAtleta> resultados;
 
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isCompartilhada = false;
+
 }

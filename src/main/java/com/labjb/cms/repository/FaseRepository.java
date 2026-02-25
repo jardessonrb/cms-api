@@ -1,11 +1,11 @@
 package com.labjb.cms.repository;
 
-import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
 import com.labjb.cms.domain.model.Categoria;
 import com.labjb.cms.domain.model.Fase;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -77,4 +77,14 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
         """,
         nativeQuery = true)
     List<Object[]> findPontuacaoParcialByFaseId(@Param("faseId") Long faseId);
+
+    @Query("SELECT f FROM Fase f WHERE f.categoria.campeonato.id = :campeonatoId AND f.isCompartilhada = true")
+    Optional<Fase> findCompartilhadaPorCampeonatoId(@Param("campeonatoId") Long campeonatoId);
+
+    @Query("SELECT f FROM Fase f WHERE f.categoria.campeonato.id = :campeonatoId")
+    List<Fase> findAllByCampeonatoId(@Param("campeonatoId") Long campeonatoId);
+
+    @Modifying
+    @Query("UPDATE Fase f SET f.isCompartilhada = false WHERE f.categoria.campeonato.id = :campeonatoId")
+    void desabilitarCompartilhamentoPorCampeonatoId(@Param("campeonatoId") Long campeonatoId);
 }

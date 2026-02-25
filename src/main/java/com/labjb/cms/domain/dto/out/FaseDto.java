@@ -15,5 +15,6 @@ public record FaseDto(
         Integer quantidadeAtletasInscritos,
         Integer ordem,
         Integer quantidadeRodadas,
-        FaseDto faseAnterior
+        FaseDto faseAnterior,
+        Boolean isCompartilhada
 ) {}

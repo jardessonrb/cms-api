@@ -82,4 +82,18 @@ public class FaseController {
             @Parameter(description = "Quantidade de atletas para o corte") @PathVariable(name = "quantidadeAtletas") Integer quantidadeAtletas) {
         return ResponseEntity.ok(faseService.validaCorte(faseAnteriorId, quantidadeAtletas));
     }
+
+    @PutMapping("/{faseId}/compartilhar")
+    @Operation(summary = "Compartilhar fase", description = "Compartilha uma fase para visualização pública")
+    public ResponseEntity<FaseDto> compartilharFase(
+            @Parameter(description = "UUID da fase") @PathVariable UUID faseId) {
+        return ResponseEntity.ok(faseService.compartilharFase(faseId));
+    }
+
+    @PutMapping("/{faseId}/parar-compartilhamento")
+    @Operation(summary = "Parar compartilhamento da fase", description = "Remove o compartilhamento de uma fase")
+    public ResponseEntity<FaseDto> pararCompartilhamentoFase(
+            @Parameter(description = "UUID da fase") @PathVariable UUID faseId) {
+        return ResponseEntity.ok(faseService.pararCompartilhamentoFase(faseId));
+    }
 }

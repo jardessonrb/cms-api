@@ -33,6 +33,8 @@ public class FaseService {
     private final RodadaRepository rodadaRepository;
     private final FaseMapper faseMapper;
     private final SeparadorAtletasComponent separadorAtletasComponent;
+    private final CompartilhamentoRepository compartilhamentoRepository;
+    private final CampeonatoRepository campeonatoRepository;
 
     @Transactional
     public FaseDto criaFase(FaseForm faseForm) {
@@ -316,5 +318,61 @@ public class FaseService {
                 .toList();
 
         return new ValidacaoCorteDto(atletasEmpatados.size(), atletasEmpatados);
+    }
+
+    @Transactional
+    public FaseDto compartilharFase(UUID faseId) {
+        // Validar existência da fase
+        Fase fase = faseRepository.findByUuid(faseId)
+                .orElseThrow(() -> new EntityNotFoundException("Fase não encontrada"));
+
+        // Obter o campeonato da categoria
+        Long campeonatoId = fase.getCategoria().getCampeonato().getId();
+
+        // Verificar se o campeonato tem compartilhamento habilitado
+        Compartilhamento compartilhamento = compartilhamentoRepository.findByCampeonatoId(campeonatoId)
+                .orElseThrow(() -> new RuntimeException("Campeonato não possui compartilhamento habilitado"));
+
+        if (!compartilhamento.getIsHabilitado()) {
+            throw new RuntimeException("Compartilhamento do campeonato não está habilitado");
+        }
+
+        // Descompartilhar todas as outras fases do campeonato
+        faseRepository.desabilitarCompartilhamentoPorCampeonatoId(campeonatoId);
+
+        // Compartilhar a fase atual
+        fase.setIsCompartilhada(true);
+        Fase faseSalva = faseRepository.save(fase);
+
+        return faseMapper.toDto(faseSalva);
+    }
+
+    @Transactional
+    public FaseDto pararCompartilhamentoFase(UUID faseId) {
+        // Validar existência da fase
+        Fase fase = faseRepository.findByUuid(faseId)
+                .orElseThrow(() -> new EntityNotFoundException("Fase não encontrada"));
+
+        // Obter o campeonato da categoria
+        Long campeonatoId = fase.getCategoria().getCampeonato().getId();
+
+        // Verificar se o campeonato tem compartilhamento habilitado
+        Compartilhamento compartilhamento = compartilhamentoRepository.findByCampeonatoId(campeonatoId)
+                .orElseThrow(() -> new RuntimeException("Campeonato não possui compartilhamento habilitado"));
+
+        if (!compartilhamento.getIsHabilitado()) {
+            throw new RuntimeException("Compartilhamento do campeonato não está habilitado");
+        }
+
+        // Verificar se esta fase está compartilhada
+        if (!fase.getIsCompartilhada()) {
+            throw new RuntimeException("Fase não está compartilhada");
+        }
+
+        // Descompartilhar a fase
+        fase.setIsCompartilhada(false);
+        Fase faseSalva = faseRepository.save(fase);
+
+        return faseMapper.toDto(faseSalva);
     }
 }
