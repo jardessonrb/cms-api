@@ -3,7 +3,9 @@ package com.labjb.cms.Controller;
 import com.labjb.cms.domain.dto.in.CampeonatoForm;
 import com.labjb.cms.domain.dto.out.CampeonatoDto;
 import com.labjb.cms.domain.dto.out.CampeonatoDetalhadoDto;
+import com.labjb.cms.domain.dto.out.CompartilhamentoDto;
 import com.labjb.cms.service.CampeonatoService;
+import com.labjb.cms.service.CompartilhamentoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,6 +29,7 @@ import java.util.UUID;
 public class CampeonatoController {
 
     private final CampeonatoService campeonatoService;
+    private final CompartilhamentoService compartilhamentoService;
 
     @PostMapping
     @Operation(summary = "Criar novo campeonato", description = "Cria um novo campeonato no sistema")
@@ -71,5 +74,50 @@ public class CampeonatoController {
     public ResponseEntity<CampeonatoDetalhadoDto> buscarCampeonatoPorUuid(
             @Parameter(description = "UUID do campeonato") @PathVariable UUID uuid) {
         return ResponseEntity.ok(campeonatoService.buscarCampeonatoPorUuid(uuid));
+    }
+
+    @PostMapping("/{campeonatoId}/criar-compartilhamento")
+    @Operation(summary = "Criar compartilhamento", description = "Cria um compartilhamento para o campeonato")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Compartilhamento criado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos ou compartilhamento já existe"),
+            @ApiResponse(responseCode = "404", description = "Campeonato não encontrado")
+    })
+    public ResponseEntity<CompartilhamentoDto> criarCompartilhamento(
+            @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId) {
+        return ResponseEntity.status(201).body(compartilhamentoService.criarCompartilhamento(campeonatoId));
+    }
+
+    @PutMapping("/{campeonatoId}/habilitar-compartilhamento")
+    @Operation(summary = "Habilitar compartilhamento", description = "Habilita o compartilhamento do campeonato")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Compartilhamento habilitado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Campeonato ou compartilhamento não encontrado")
+    })
+    public ResponseEntity<CompartilhamentoDto> habilitarCompartilhamento(
+            @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId) {
+        return ResponseEntity.ok(compartilhamentoService.habilitarCompartilhamento(campeonatoId));
+    }
+
+    @PutMapping("/{campeonatoId}/desabilitar-compartilhamento")
+    @Operation(summary = "Desabilitar compartilhamento", description = "Desabilita o compartilhamento do campeonato")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Compartilhamento desabilitado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Campeonato ou compartilhamento não encontrado")
+    })
+    public ResponseEntity<CompartilhamentoDto> desabilitarCompartilhamento(
+            @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId) {
+        return ResponseEntity.ok(compartilhamentoService.desabilitarCompartilhamento(campeonatoId));
+    }
+
+    @GetMapping("/{campeonatoId}/compartilhamento")
+    @Operation(summary = "Buscar compartilhamento", description = "Busca o compartilhamento do campeonato")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Compartilhamento encontrado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Campeonato ou compartilhamento não encontrado")
+    })
+    public ResponseEntity<CompartilhamentoDto> buscarCompartilhamento(
+            @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId) {
+        return ResponseEntity.ok(compartilhamentoService.buscarCompartilhamento(campeonatoId));
     }
 }
