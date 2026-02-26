@@ -36,6 +36,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+//        try {
+//            Thread.sleep(2000);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
+
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userEmail;

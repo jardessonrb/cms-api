@@ -46,12 +46,12 @@ public class CompartilhamentoService {
         Compartilhamento compartilhamento = Compartilhamento.builder()
                 .campeonato(campeonato)
                 .token(token)
-                .isHabilitado(false)
+                .isHabilitado(true)
                 .build();
 
-        compartilhamentoRepository.save(compartilhamento);
+        compartilhamento = compartilhamentoRepository.save(compartilhamento);
 
-        return new CompartilhamentoDto(false, token);
+        return new CompartilhamentoDto(compartilhamento.getIsHabilitado(), compartilhamento.getToken());
     }
 
     public CompartilhamentoDto habilitarCompartilhamento(UUID campeonatoUuid) {
