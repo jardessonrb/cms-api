@@ -65,6 +65,9 @@ public interface AtletaRepository extends JpaRepository<Atleta, Long> {
     @Query("SELECT coalesce(MAX(a.numero), 0) FROM Atleta a WHERE a.campeonato.uuid = :campeonatoId")
     Integer findMaxNumeroByCampeonatoUuid(@Param("campeonatoId") UUID campeonatoId);
 
+    @Query("SELECT COUNT(a) > 0 FROM Atleta a JOIN a.inscricoesCategoria ic WHERE ic.categoria.uuid = :categoriaId AND a.uuid = :atletaId")
+    boolean existsAtletaInCategoria(@Param("atletaId") UUID atletaId, @Param("categoriaId") UUID categoriaId);
+
     @Modifying
     @Query(value = """
         with registro_disputas_por_atleta as (

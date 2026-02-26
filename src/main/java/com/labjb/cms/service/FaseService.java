@@ -11,6 +11,7 @@ import com.labjb.cms.domain.model.*;
 import com.labjb.cms.repository.*;
 import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.FaseMapper;
+import com.labjb.cms.shared.utils.Utils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -232,9 +233,9 @@ public class FaseService {
                 row[5] != null ? ((Number) row[5]).intValue() : null,  // numeroCompetidor
                 ((Number) row[6]).longValue(),  // partidas
                 ((Number) row[7]).longValue(),  // partidas_concluidas
-                ((Number) row[8]).doubleValue(),  // pontuacao_por_dupla
-                ((Number) row[9]).doubleValue(),  // pontuacao_por_atleta
-                ((Number) row[10]).doubleValue(),  // total_fase
+                Utils.arredondar(((Number) row[8]).doubleValue()),  // pontuacao_por_dupla
+                Utils.arredondar(((Number) row[9]).doubleValue()),  // pontuacao_por_atletas
+                Utils.arredondar(((Number) row[10]).doubleValue()),  // total_fase
                 null  // posicao será calculada abaixo
             ));
         }
@@ -375,5 +376,88 @@ public class FaseService {
         Fase faseSalva = faseRepository.save(fase);
 
         return faseMapper.toDto(faseSalva);
+    }
+
+    @Transactional
+    public void adicionarAtletaFase(UUID faseId, UUID atletaId) {
+        // Validar existência da fase
+        Fase fase = faseRepository.findByUuid(faseId)
+                .orElseThrow(() -> new EntityNotFoundException("Fase não encontrada"));
+
+        // Validar se a fase não está finalizada
+        if (fase.getSituacao() == SituacaoFaseEnum.FINALIZADA) {
+            throw new RegraNegocioException("Não é possível adicionar atletas a uma fase finalizada");
+        }
+
+        // Validar existência do atleta
+        Atleta atleta = atletaRepository.findByUuid(atletaId)
+                .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado"));
+
+        // Validar se o atleta está ativo
+        if (atleta.getSituacao() != SituacaoAtletaEnum.ATIVO) {
+            throw new RegraNegocioException("Apenas atletas ativos podem ser adicionados à fase");
+        }
+
+        // Validar se o atleta pertence à mesma categoria da fase
+        if (!atletaRepository.existsAtletaInCategoria(atletaId, fase.getCategoria().getUuid())) {
+            throw new RegraNegocioException("O atleta não pertence à categoria desta fase");
+        }
+
+        // Validar se o atleta já está na fase
+        if (fase.getAtletas().contains(atleta)) {
+            throw new RegraNegocioException("O atleta já está nesta fase");
+        }
+
+        // Adicionar o atleta à fase
+        fase.getAtletas().add(atleta);
+        
+        // Verificar se a fase já tem rodadas geradas
+        if (!fase.getRodadas().isEmpty()) {
+            // Para cada rodada da fase, criar disputa individual para o novo atleta
+            for (Rodada rodada : fase.getRodadas()) {
+                // Se a rodada estiver finalizada, voltar para criada
+                if (rodada.getSituacao() == SituacaoRodadaEnum.FINALIZADA) {
+                    rodada.setSituacao(SituacaoRodadaEnum.CRIADA);
+                }
+                
+                // Buscar um outro atleta aleatório da fase (exceto o novo atleta)
+                List<Atleta> outrosAtletas = fase.getAtletas().stream()
+                        .filter(a -> !a.equals(atleta) && !a.getSituacao().equals(SituacaoAtletaEnum.CANCELADO))
+                        .collect(Collectors.toList());
+                
+                if (!outrosAtletas.isEmpty()) {
+                    // Selecionar atleta aleatório
+                    Random random = new Random();
+                    Atleta atletaOponente = outrosAtletas.get(random.nextInt(outrosAtletas.size()));
+                    
+                    // Criar disputa individual
+                    Disputa disputa = Disputa.builder()
+                            .rodada(rodada)
+                            .situacao(SituacaoDisputaEnum.PENDENTE)
+                            .tipoDisputa(TipoDisputaEnum.INDIVIDUAL)
+                            .build();
+                    
+                    // Criar registros de disputa para os dois atletas
+                    RegistroDisputa registroNovoAtleta = RegistroDisputa.builder()
+                            .atleta(atleta)
+                            .disputa(disputa)
+                            .tipoRegistro(TipoRegistroPontuacaoEnum.PONTUADO)
+                            .build();
+                    
+                    RegistroDisputa registroOponente = RegistroDisputa.builder()
+                            .atleta(atletaOponente)
+                            .disputa(disputa)
+                            .tipoRegistro(TipoRegistroPontuacaoEnum.NAO_PONTUADO)
+                            .build();
+                    
+                    disputa.setRegistroDisputas(new HashSet<>(Arrays.asList(registroNovoAtleta, registroOponente)));
+                    
+                    // Adicionar disputa à rodada
+                    rodada.getDisputas().add(disputa);
+                }
+            }
+        }
+        
+        faseRepository.save(fase);
     }
 }

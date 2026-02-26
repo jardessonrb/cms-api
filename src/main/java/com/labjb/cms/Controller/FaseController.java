@@ -96,4 +96,13 @@ public class FaseController {
             @Parameter(description = "UUID da fase") @PathVariable UUID faseId) {
         return ResponseEntity.ok(faseService.pararCompartilhamentoFase(faseId));
     }
+
+    @PostMapping("/{faseId}/atleta/{atletaId}/adicionar")
+    @Operation(summary = "Adicionar atleta à fase", description = "Adiciona um atleta ativo da categoria a uma fase que não está finalizada")
+    public ResponseEntity<Void> adicionarAtletaFase(
+            @Parameter(description = "UUID da fase") @PathVariable UUID faseId,
+            @Parameter(description = "UUID do atleta") @PathVariable UUID atletaId) {
+        faseService.adicionarAtletaFase(faseId, atletaId);
+        return ResponseEntity.ok().build();
+    }
 }
