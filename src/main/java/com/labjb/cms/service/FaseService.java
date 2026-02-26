@@ -45,6 +45,7 @@ public class FaseService {
         fase.setCategoria(categoria);
         fase.setSituacao(SituacaoFaseEnum.CRIADA);
         fase.setOrdem(Math.toIntExact(faseRepository.findMaxOrdemByCategoriaUuid(categoria.getUuid()) + 1));
+        fase.setIsCompartilhada(false);
 
         // Se critério for TODOS, adicionar todos os atletas da categoria
         if (faseForm.criterioEntrada() == CriterioEntrada.TODOS) {
