@@ -192,15 +192,16 @@ public class RodadaService {
             finalizarRodadaDesempate(rodada);
             Rodada rodadaSalva = rodadaRepository.save(rodada);
             return rodadaMapper.toDto(rodadaSalva);
+        }else{
+            rodada.setSituacao(SituacaoRodadaEnum.FINALIZADA);
+            Rodada rodadaSalva = rodadaRepository.save(rodada);
+            return rodadaMapper.toDto(rodadaSalva);
         }
 
-        rodada.setSituacao(SituacaoRodadaEnum.FINALIZADA);
-        Rodada rodadaSalva = rodadaRepository.save(rodada);
-        return rodadaMapper.toDto(rodadaSalva);
     }
 
     @Transactional
-    public FaseDto finalizarRodadaDesempate(Rodada rodada) {
+    public void finalizarRodadaDesempate(Rodada rodada) {
         // 1° Verificar se é uma rodada de desempate
         if (rodada.getTipoRodada() != TipoRodadaEnum.DESEMPATE) {
             throw new RegraNegocioException("Rodada deve ser do tipo DESEMPATE");
@@ -208,7 +209,7 @@ public class RodadaService {
 
         // 2° Buscar todas as disputas da rodada e verificar se estão CONCLUIDAS
         for (Disputa disputa : rodada.getDisputas()) {
-            if (disputa.getSituacao() != SituacaoDisputaEnum.CONCLUIDA) {
+            if (disputa.getSituacao() != SituacaoDisputaEnum.CONCLUIDA && disputa.getSituacao() != SituacaoDisputaEnum.CANCELADA) {
                 throw new RegraNegocioException("Todas as disputas da rodada de desempate devem estar CONCLUIDAS");
             }
         }
@@ -258,11 +259,11 @@ public class RodadaService {
                 .collect(Collectors.toSet());
 
         // Buscar fase que está aguardando desempate (próxima fase na mesma categoria)
-        Fase faseAnterior = rodada.getFase();
-        List<Fase> fasesCategoria = faseRepository.findByCategoriaUuidOrderByOrdemDesc(null, faseAnterior.getCategoria().getUuid(), null)
+        Fase faseProprietariaDaRodadaDeDesempate = rodada.getFase();
+        List<Fase> fasesCategoria = faseRepository.findByCategoriaUuidOrderByOrdemDesc(null, faseProprietariaDaRodadaDeDesempate.getCategoria().getUuid(), null)
                 .getContent()
                 .stream()
-                .filter(f -> f.getOrdem() > faseAnterior.getOrdem())
+                .filter(f -> f.getOrdem() > faseProprietariaDaRodadaDeDesempate.getOrdem())
                 .sorted((a, b) -> Integer.compare(a.getOrdem(), b.getOrdem()))
                 .toList();
 
@@ -283,10 +284,12 @@ public class RodadaService {
 
         // 7° Encerrar a rodada de desempate como FINALIZADA
         rodada.setSituacao(SituacaoRodadaEnum.FINALIZADA);
+        faseProprietariaDaRodadaDeDesempate.setSituacao(SituacaoFaseEnum.FINALIZADA);
 
         // Salvar as alterações
         rodadaRepository.save(rodada);
-
-        return faseMapper.toDto(faseRepository.save(faseAguardandoDesempate));
+        faseRepository.save(faseProprietariaDaRodadaDeDesempate);
+        faseRepository.save(faseAguardandoDesempate);
+        return;
     }
 }

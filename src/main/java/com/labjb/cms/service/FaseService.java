@@ -118,8 +118,6 @@ public class FaseService {
                 // Salvar a rodada de desempate na fase anterior
                 rodadaRepository.save(rodadaDesempate);
 
-                // Criar fase com situação AGUARDANDO_DESEMPATE contendo os atletas classificados direto
-                fase.setFaseAnterior(faseAnterior);
                 fase.setSituacao(SituacaoFaseEnum.AGUARDANDO_DESEMPATE);
 
                 faseAnterior.setSituacao(SituacaoFaseEnum.INICIADA);
@@ -129,6 +127,7 @@ public class FaseService {
             fase.setAtletas(atletasClassificadosDireto.stream()
                     .map(ResultadoFaseAtleta::getAtleta)
                     .collect(Collectors.toSet()));
+            fase.setFaseAnterior(faseAnterior);
         }
 
         return faseMapper.toDto(faseRepository.save(fase));
