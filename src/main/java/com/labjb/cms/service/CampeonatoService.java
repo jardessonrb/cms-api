@@ -34,6 +34,7 @@ public class CampeonatoService {
         Campeonato campeonato = campeonatoMapper.toEntity(campeonatoForm);
         campeonato.setSituacao(SituacaoCampeonatoEnum.CRIADO);
         campeonato.setGrupo(usuarioAutenticado.getGrupo());
+        campeonato.setUsuarioCriador(usuarioAutenticado);
         
         return campeonatoMapper.toDto(campeonatoRepository.save(campeonato));
     }
@@ -84,6 +85,7 @@ public class CampeonatoService {
                 campeonato.getNome(),
                 campeonato.getSituacao(),
                 campeonato.getCriadoEm(),
+                campeonato.getUsuarioCriador() != null ? campeonato.getUsuarioCriador().getName() : null,
                 quantidadeAtletas,
                 quantidadeCategorias,
                 quantidadeJurados

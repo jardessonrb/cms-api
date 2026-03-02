@@ -10,6 +10,7 @@ public record CampeonatoDetalhadoDto(
     String nome, 
     SituacaoCampeonatoEnum situacao, 
     LocalDateTime criadoEm,
+    String nomeUsuarioCriador,
     long quantidadeAtletas,
     long quantidadeCategorias,
     long quantidadeJurados

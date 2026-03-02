@@ -11,7 +11,8 @@ import org.mapstruct.Mappings;
 public interface CampeonatoMapper extends BaseMaps<CampeonatoDto, Campeonato, CampeonatoForm>{
 
     @Mappings({
-            @Mapping(target = "id", source = "uuid")
+            @Mapping(target = "id", source = "uuid"),
+            @Mapping(target = "nomeUsuarioCriador", source = "usuarioCriador.name")
     })
     CampeonatoDto toDto(Campeonato entity);
 }

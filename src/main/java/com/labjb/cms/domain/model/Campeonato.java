@@ -37,6 +37,10 @@ public class Campeonato extends BaseEntity {
     @JoinColumn(name = "grupo_id")
     private Grupo grupo;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_criador_id")
+    private User usuarioCriador;
+
     @OneToOne(mappedBy = "campeonato", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Compartilhamento compartilhamento;
 }
