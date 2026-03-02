@@ -46,6 +46,19 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
         	group by  trd.atleta_id, tf.nome, tc.nome, tr.id
         ),
         --select * from notas_por_rodada;
+        notas_rodada_desempate as (
+            select tf.nome as fase, tc.nome as categoria,
+            tr.id as rodada_id, trd.atleta_id, avg(tn.nota_da_dupla) as nota_dupla, avg(tn.nota_do_atleta) as nota_atleta,
+            (avg(tn.nota_da_dupla) + avg(tn.nota_do_atleta)) as total_por_rodada
+            from tb_nota tn
+            right join tb_registro_disputa trd on tn.registro_disputa_id = trd.id
+            join tb_disputa td on trd.disputa_id = td.id
+            join tb_rodada tr on td.rodada_id = tr.id and tr.tipo_rodada = 'DESEMPATE'
+            join tb_fase tf on tr.fase_id = tf.id
+            join tb_categoria tc on tf.categoria_id = tc.id
+            where tf.id = :faseId
+            group by  trd.atleta_id, tf.nome, tc.nome, tr.id
+        ),
         partidas_por_atleta as (
         	select ta.id as atleta_id,
         	count(distinct td.id) as partidas,
@@ -68,12 +81,13 @@ public interface FaseRepository extends JpaRepository<Fase, Long> {
         ppa.partidas_concluidas,
         coalesce(sum(npr.nota_dupla), 0) as pontuacao_por_dupla,
         coalesce(sum(npr.nota_atleta), 0) as pontuacao_por_atleta,
-        coalesce(sum(npr.total_por_rodada), 0) as total_fase
+        coalesce(sum(npr.total_por_rodada), 0) as total_fase,
+        coalesce((select nrd.total_por_rodada from notas_rodada_desempate nrd where nrd.atleta_id = ta.id), 2147483647) as pontuacao_desempate
         from notas_por_rodada npr
         join tb_atleta ta on npr.atleta_id = ta.id
         join partidas_por_atleta ppa on ppa.atleta_id = ta.id
         group by ta.id, npr.categoria, npr.fase, ta.apelido, ta.grupo, ta.numero, ppa.partidas, ppa.partidas_concluidas
-        order by total_fase desc;
+        order by total_fase desc, pontuacao_desempate desc;
         """,
         nativeQuery = true)
     List<Object[]> findPontuacaoParcialByFaseId(@Param("faseId") Long faseId);

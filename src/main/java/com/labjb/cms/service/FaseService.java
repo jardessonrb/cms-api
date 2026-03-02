@@ -36,6 +36,7 @@ public class FaseService {
     private final SeparadorAtletasComponent separadorAtletasComponent;
     private final CompartilhamentoRepository compartilhamentoRepository;
     private final CampeonatoRepository campeonatoRepository;
+    private final double VALOR_MAXIMO_DESEMPATE = Integer.MAX_VALUE;
 
     @Transactional
     public FaseDto criaFase(FaseForm faseForm) {
@@ -178,6 +179,7 @@ public class FaseService {
                 primeiro.categoria(), primeiro.fase(), primeiro.competidor(), primeiro.numeroCompetidor(),
                 primeiro.partidas(), primeiro.partidasConcluidas(), 
                 primeiro.notaIndividual(), primeiro.notaDupla(), primeiro.total(),
+                primeiro.totalDesempate() >= VALOR_MAXIMO_DESEMPATE ? -1 : primeiro.totalDesempate(),
                 posicaoAtual
             ));
             
@@ -188,7 +190,8 @@ public class FaseService {
                 
                 Double totalAnterior = anterior.total();
                 Double totalAtual = atual.total();
-                
+
+                double totalDesempate = atual.totalDesempate() >= VALOR_MAXIMO_DESEMPATE ? -1 : atual.totalDesempate();
                 if (totalAtual.equals(totalAnterior)) {
                     // Mesmo total, mesma posição
                     resultadoFinal.add(new PontuacaoParcialDto(
@@ -197,6 +200,7 @@ public class FaseService {
                         atual.categoria(), atual.fase(), atual.competidor(), atual.numeroCompetidor(),
                         atual.partidas(), atual.partidasConcluidas(), 
                         atual.notaIndividual(), atual.notaDupla(), atual.total(),
+                        totalDesempate,
                         posicaoAtual
                     ));
                 } else {
@@ -208,6 +212,7 @@ public class FaseService {
                         atual.categoria(), atual.fase(), atual.competidor(), atual.numeroCompetidor(),
                         atual.partidas(), atual.partidasConcluidas(), 
                         atual.notaIndividual(), atual.notaDupla(), atual.total(),
+                        totalDesempate,
                         posicaoAtual
                     ));
                 }
@@ -235,6 +240,7 @@ public class FaseService {
                 Utils.arredondar(((Number) row[8]).doubleValue()),  // pontuacao_por_dupla
                 Utils.arredondar(((Number) row[9]).doubleValue()),  // pontuacao_por_atletas
                 Utils.arredondar(((Number) row[10]).doubleValue()),  // total_fase
+                Utils.arredondar(((Number) row[11]).doubleValue()),  // total_fase_desempate
                 null  // posicao será calculada abaixo
             ));
         }

@@ -12,5 +12,6 @@ public record PontuacaoParcialDto(
         Double notaIndividual,
         Double notaDupla,
         Double total,
+        Double totalDesempate,
         Integer posicao
 ) {}
