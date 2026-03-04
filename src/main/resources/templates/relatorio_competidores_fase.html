@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        @page {
+            size: A4;
+            margin: 5mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 15px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .info {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .bold {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Relatório de Competidores</h1>
+<p style="text-align: center;">
+    <strong>Categoria: </strong><span th:text="${categoria}"></span> | <strong>Fase: </strong><span th:text="${fase}"></span>
+</p>
+
+<table>
+    <thead>
+    <tr>
+        <th>Número / Apelido / Nome</th>
+        <th>Responsável / Grupo</th>
+        <th>Graduação</th>
+        <th>Situação</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <tr th:each="atleta : ${dados}">
+        <!-- Número / Apelido / Nome -->
+        <td>
+            <div>
+                <span class="bold"
+                      th:text="|${atleta.numero} - ${atleta.apelido}|">
+                </span>
+                <br/>
+                <span th:text="${atleta.nome}"></span>
+            </div>
+        </td>
+
+        <!-- Responsável / Grupo -->
+        <td>
+            <div>
+                <span class="bold"
+                      th:text="${atleta.grupo}">
+                </span>
+                <br/>
+                <span th:text="${atleta.responsavel}"></span>
+            </div>
+        </td>
+
+        <!-- Graduação -->
+        <td th:text="${atleta.graduacao}"></td>
+
+        <!-- Situação -->
+        <td th:text="${atleta.situacao}"></td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

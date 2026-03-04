@@ -465,4 +465,9 @@ public class FaseService {
         
         faseRepository.save(fase);
     }
+
+    public Fase buscaFasePorUuid(UUID faseId){
+        return faseRepository.findByUuid(faseId)
+                .orElseThrow(() -> new EntityNotFoundException("Fase não encontrada"));
+    }
 }

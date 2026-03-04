@@ -24,6 +24,14 @@ public class GeradorDeRelatoriosController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=relatorio_ranking_fase.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(geradorDeRelatoriosService.gerarRelatorio(faseId));
+                .body(geradorDeRelatoriosService.gerarRelatorioRanking(faseId));
+    }
+
+    @GetMapping("/atletas/fase/{faseId}/download-competidores-pdf")
+    public ResponseEntity<?> gerarRelatorioAtletasDaFase(@PathVariable(name = "faseId") UUID faseId) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=relatorio_competidores_fase.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(geradorDeRelatoriosService.gerarRelatorioAtletasFase(faseId));
     }
 }
