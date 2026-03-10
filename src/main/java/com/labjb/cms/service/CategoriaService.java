@@ -2,6 +2,7 @@ package com.labjb.cms.service;
 
 import com.labjb.cms.domain.dto.in.CategoriaForm;
 import com.labjb.cms.domain.dto.out.CategoriaDto;
+import com.labjb.cms.domain.dto.out.PontuacaoGeralCategoriaDto;
 import com.labjb.cms.domain.enums.SituacaoCategoriaEnum;
 import com.labjb.cms.domain.enums.SituacaoInscricaoCategoriaEnum;
 import com.labjb.cms.domain.model.Categoria;
@@ -14,12 +15,15 @@ import com.labjb.cms.repository.InscricaoCategoriaRepository;
 import com.labjb.cms.repository.AtletaRepository;
 import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.CategoriaMapper;
+import com.labjb.cms.shared.utils.Utils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -127,5 +131,98 @@ public class CategoriaService {
 
         // Remover inscrição
         inscricaoCategoriaRepository.delete(inscricaoCategoria.get());
+    }
+
+    public List<PontuacaoGeralCategoriaDto> buscarPontuacaoGeralPorCategoria(UUID categoriaId) {
+        Categoria categoria = categoriaRepository.findByUuid(categoriaId)
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada"));
+
+        List<PontuacaoGeralCategoriaDto> pontuacoes = obterPontuacaoGeralCategoriaDtos(categoriaId);
+
+        // Agora calcular posições e criar novos objetos com posição (seguindo buscarPontuacaoParcial)
+        List<PontuacaoGeralCategoriaDto> resultadoFinal = new ArrayList<>();
+        if (!pontuacoes.isEmpty()) {
+            int posicaoAtual = 1;
+
+            // Primeiro elemento sempre recebe posição 1
+            PontuacaoGeralCategoriaDto primeiro = pontuacoes.get(0);
+            resultadoFinal.add(new PontuacaoGeralCategoriaDto(
+                primeiro.atletaId(),
+                primeiro.situacao(),
+                primeiro.categoria(),
+                primeiro.competidor(),
+                primeiro.graduacao(),
+                primeiro.numeroCompetidor(),
+                primeiro.pontuacaoPorDupla(),
+                primeiro.pontuacaoPorAtleta(),
+                primeiro.totalGeral(),
+                posicaoAtual
+            ));
+            
+            // Demais elementos
+            for (int i = 1; i < pontuacoes.size(); i++) {
+                PontuacaoGeralCategoriaDto atual = pontuacoes.get(i);
+                PontuacaoGeralCategoriaDto anterior = pontuacoes.get(i - 1);
+                
+                Double totalAnterior = anterior.totalGeral();
+                Double totalAtual = atual.totalGeral();
+
+                if (totalAtual.equals(totalAnterior)) {
+                    // Mesmo total, mesma posição
+                    resultadoFinal.add(new PontuacaoGeralCategoriaDto(
+                        atual.atletaId(),
+                        atual.situacao(),
+                        atual.categoria(),
+                        atual.competidor(),
+                        atual.graduacao(),
+                        atual.numeroCompetidor(),
+                        atual.pontuacaoPorDupla(),
+                        atual.pontuacaoPorAtleta(),
+                        atual.totalGeral(),
+                        posicaoAtual
+                    ));
+                } else {
+                    // Total diferente, nova posição
+                    posicaoAtual++;
+                    resultadoFinal.add(new PontuacaoGeralCategoriaDto(
+                        atual.atletaId(),
+                        atual.situacao(),
+                        atual.categoria(),
+                        atual.competidor(),
+                        atual.graduacao(),
+                        atual.numeroCompetidor(),
+                        atual.pontuacaoPorDupla(),
+                        atual.pontuacaoPorAtleta(),
+                        atual.totalGeral(),
+                        posicaoAtual
+                    ));
+                }
+            }
+        }
+
+        return resultadoFinal;
+    }
+
+    private @NonNull List<PontuacaoGeralCategoriaDto> obterPontuacaoGeralCategoriaDtos(UUID categoriaId) {
+        List<Object[]> resultados = categoriaRepository.findPontuacaoGeralByCategoriaId(categoriaId);
+
+        List<PontuacaoGeralCategoriaDto> pontuacoes = new ArrayList<>();
+
+        // Primeiro, criar todos os DTOs sem posição
+        for (Object[] row : resultados) {
+            pontuacoes.add(new PontuacaoGeralCategoriaDto(
+                ((Number) row[0]).longValue(),  // atletaId
+                (String) row[1],  // situacao
+                (String) row[2],  // categoria
+                (String) row[3],  // competidor
+                (String) row[4],  // graduacao
+                row[5] != null ? ((Number) row[5]).intValue() : null,  // numeroCompetidor
+                Utils.arredondar(((Number) row[6]).doubleValue()),  // pontuacaoPorDupla
+                Utils.arredondar(((Number) row[7]).doubleValue()),  // pontuacaoPorAtleta
+                Utils.arredondar(((Number) row[8]).doubleValue()),  // totalGeral
+                null  // posicao será calculada abaixo
+            ));
+        }
+        return pontuacoes;
     }
 }

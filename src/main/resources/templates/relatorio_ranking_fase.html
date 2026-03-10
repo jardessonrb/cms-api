@@ -67,7 +67,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr th:each="item : ${dados}">
+    <tr th:each="item : ${dados}" th:style="${item.situacao == 'CANCELADO' ? 'background-color: #dc2626;' : ''}">
         <td th:text="${item.posicao + '°'}"></td>
 
         <td th:text="${item.numeroCompetidor != null

@@ -3,6 +3,7 @@ package com.labjb.cms.service;
 import com.labjb.cms.domain.dto.out.AtletaDto;
 import com.labjb.cms.domain.dto.out.FaseDto;
 import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
+import com.labjb.cms.domain.dto.out.PontuacaoGeralCategoriaDto;
 import com.labjb.cms.domain.model.Fase;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class GeradorDeRelatoriosService {
     private final TemplateEngine templateEngine;
     private final FaseService faseService;
     private final AtletaService atletaService;
+    private final CategoriaService categoriaService;
 
     public byte[] gerarRelatorioRanking(UUID faseId) {
         List<PontuacaoParcialDto> pontuacaoParcialDtos = faseService.buscarPontuacaoParcial(faseId);
@@ -90,5 +92,32 @@ public class GeradorDeRelatoriosService {
             throw new RuntimeException("Erro ao gerar PDF", e);
         }
 
+    }
+
+    public byte[] gerarRelatorioRankingCategoria(UUID categoriaId) {
+        List<PontuacaoGeralCategoriaDto> pontuacaoGeralDtos = categoriaService.buscarPontuacaoGeralPorCategoria(categoriaId);
+        Optional<PontuacaoGeralCategoriaDto> primeiraPontuacao = pontuacaoGeralDtos.stream().findFirst();
+        String categoria = primeiraPontuacao.isPresent() ? primeiraPontuacao.get().categoria() : "";
+
+        try {
+            Context context = new Context();
+            context.setVariable("dados", pontuacaoGeralDtos);
+            context.setVariable("categoria", categoria);
+
+            String html = templateEngine.process("relatorio_ranking_categoria", context);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.withHtmlContent(html, null);
+            builder.toStream(outputStream);
+            builder.run();
+
+            return outputStream.toByteArray();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erro ao gerar PDF", e);
+        }
     }
 }

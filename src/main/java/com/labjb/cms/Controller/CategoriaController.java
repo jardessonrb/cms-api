@@ -2,6 +2,7 @@ package com.labjb.cms.Controller;
 
 import com.labjb.cms.domain.dto.in.CategoriaForm;
 import com.labjb.cms.domain.dto.out.CategoriaDto;
+import com.labjb.cms.domain.dto.out.PontuacaoGeralCategoriaDto;
 import com.labjb.cms.service.CategoriaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -73,5 +74,12 @@ public class CategoriaController {
             @Parameter(description = "UUID do atleta") @PathVariable UUID atletaId) {
         categoriaService.removeInscricaoDeAtletaEmCategoria(categoriaId, atletaId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{categoriaId}/pontuacao-geral")
+    @Operation(summary = "Buscar pontuação geral por categoria", description = "Retorna a pontuação geral de todos os atletas de uma categoria específica")
+    public ResponseEntity<List<PontuacaoGeralCategoriaDto>> buscarPontuacaoGeralPorCategoria(
+            @Parameter(description = "UUID da categoria") @PathVariable UUID categoriaId) {
+        return ResponseEntity.ok(categoriaService.buscarPontuacaoGeralPorCategoria(categoriaId));
     }
 }

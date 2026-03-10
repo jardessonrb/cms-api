@@ -54,10 +54,10 @@ public class AtletaService {
                     });
         }
 
-        Integer maxNumeroByCampeonatoUuid = atletaRepository.findMaxNumeroByCampeonatoUuid(campeonato.getUuid());
+        Integer maximoNumeroPorCampeonatoUuid = atletaRepository.findMaxNumeroByCampeonatoUuid(campeonato.getUuid());
         Atleta atleta = atletaMapper.toEntity(atletaForm);
         atleta.setCampeonato(campeonato);
-        atleta.setNumero(atletaForm.numero() == null ? (maxNumeroByCampeonatoUuid + 1) : atletaForm.numero());
+        atleta.setNumero(atletaForm.numero() == null || atleta.getNumero() == 0 ? (maximoNumeroPorCampeonatoUuid + 1) : atletaForm.numero());
         atleta = atletaRepository.save(atleta);
 
         if(Objects.nonNull(atletaForm.categoriaId())){

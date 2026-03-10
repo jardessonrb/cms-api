@@ -1,6 +1,9 @@
 package com.labjb.cms.Controller;
 
 import com.labjb.cms.service.GeradorDeRelatoriosService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -15,12 +18,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/relatorios")
+@Tag(name = "Relatórios", description = "Operações relacionadas a geração de relatórios")
 public class GeradorDeRelatoriosController {
 
     private final GeradorDeRelatoriosService geradorDeRelatoriosService;
 
     @GetMapping("/fase/{faseId}/download-ranking-pdf")
-    public ResponseEntity<?> gerarRelatorioRankingDaFase(@PathVariable(name = "faseId") UUID faseId) {
+    @Operation(summary = "Gerar relatório de ranking da fase", description = "Gera um PDF com o ranking de pontuação de uma fase específica")
+    public ResponseEntity<?> gerarRelatorioRankingDaFase(@Parameter(description = "UUID da fase") @PathVariable(name = "faseId") UUID faseId) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=relatorio_ranking_fase.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
@@ -28,10 +33,20 @@ public class GeradorDeRelatoriosController {
     }
 
     @GetMapping("/atletas/fase/{faseId}/download-competidores-pdf")
-    public ResponseEntity<?> gerarRelatorioAtletasDaFase(@PathVariable(name = "faseId") UUID faseId) {
+    @Operation(summary = "Gerar relatório de competidores da fase", description = "Gera um PDF com a lista de competidores de uma fase específica")
+    public ResponseEntity<?> gerarRelatorioAtletasDaFase(@Parameter(description = "UUID da fase") @PathVariable(name = "faseId") UUID faseId) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=relatorio_competidores_fase.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(geradorDeRelatoriosService.gerarRelatorioAtletasFase(faseId));
+    }
+
+    @GetMapping("/categoria/{categoriaId}/download-ranking-geral-pdf")
+    @Operation(summary = "Gerar relatório de ranking geral da categoria", description = "Gera um PDF com o ranking geral de pontuação de uma categoria específica")
+    public ResponseEntity<?> gerarRelatorioRankingDaCategoria(@Parameter(description = "UUID da categoria") @PathVariable(name = "categoriaId") UUID categoriaId) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=relatorio_ranking_categoria.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(geradorDeRelatoriosService.gerarRelatorioRankingCategoria(categoriaId));
     }
 }
