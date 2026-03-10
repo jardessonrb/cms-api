@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+
+    <style>
+        @page {
+            size: A4;
+            margin: 5mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 15px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            page-break-inside: auto;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Relatório de Pontuação Geral</h1>
+<p style="text-align: center;">
+    <strong>Categoria: </strong><span th:text="${categoria}"></span>
+</p>
+
+<table>
+    <thead>
+    <tr>
+        <th>Posição</th>
+        <th>Competidor</th>
+        <th>Situação</th>
+        <th>Graduação</th>
+        <th>Pontuação por Dupla</th>
+        <th>Pontuação por Atleta</th>
+        <th>Total Geral</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${dados}" th:style="${item.situacao == 'CANCELADO' ? 'background-color: #dc2626;' : ''}">
+        <td th:text="${item.posicao + '°'}"></td>
+
+        <td th:text="${item.numeroCompetidor != null
+                    ? '(' + item.numeroCompetidor + ')' + item.competidor
+                    : item.competidor}">
+        </td>
+
+        <td th:text="${item.situacao}"></td>
+
+        <td th:text="${item.graduacao}"></td>
+
+        <td th:text="${#numbers.formatDecimal(item.pontuacaoPorDupla, 1, 2)}"></td>
+        <td th:text="${#numbers.formatDecimal(item.pontuacaoPorAtleta, 1, 2)}"></td>
+        <td th:text="${#numbers.formatDecimal(item.totalGeral, 1, 2)}"></td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>
