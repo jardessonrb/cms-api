@@ -49,4 +49,13 @@ public class GeradorDeRelatoriosController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(geradorDeRelatoriosService.gerarRelatorioRankingCategoria(categoriaId));
     }
+
+    @GetMapping("/fase/{faseId}/download-disputas-pdf")
+    @Operation(summary = "Gerar relatório de disputas da fase", description = "Gera um PDF com as disputas agrupadas por fase")
+    public ResponseEntity<?> gerarRelatorioDisputasDaFase(@Parameter(description = "UUID da fase") @PathVariable(name = "faseId") UUID faseId) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=relatorio_disputas_fase.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(geradorDeRelatoriosService.gerarRelatorioDisputasPorFase(faseId));
+    }
 }

@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -54,7 +56,7 @@ public class CategoriaController {
     public ResponseEntity<Page<CategoriaDto>> listarCategoriasPorCampeonato(
             @Parameter(description = "UUID do campeonato") @PathVariable UUID campeonatoId,
             @Parameter(description = "Filtro por nome da categoria") @RequestParam(required = false, name = "filtro") String filtro,
-            @Parameter(description = "Configurações de paginação") Pageable pageable) {
+            @Parameter(description = "Configurações de paginação") @PageableDefault(sort = {"nome"}, direction = Sort.Direction.ASC) Pageable pageable) {
         return ResponseEntity.ok(categoriaService.listarCategoriasPorCampeonato(campeonatoId, filtro, pageable));
     }
 

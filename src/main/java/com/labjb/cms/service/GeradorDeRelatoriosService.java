@@ -4,6 +4,7 @@ import com.labjb.cms.domain.dto.out.AtletaDto;
 import com.labjb.cms.domain.dto.out.FaseDto;
 import com.labjb.cms.domain.dto.out.PontuacaoParcialDto;
 import com.labjb.cms.domain.dto.out.PontuacaoGeralCategoriaDto;
+import com.labjb.cms.domain.dto.out.RelatorioDisputasCompletoDto;
 import com.labjb.cms.domain.model.Fase;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class GeradorDeRelatoriosService {
     private final FaseService faseService;
     private final AtletaService atletaService;
     private final CategoriaService categoriaService;
+    private final DisputaService disputaService;
 
     public byte[] gerarRelatorioRanking(UUID faseId) {
         List<PontuacaoParcialDto> pontuacaoParcialDtos = faseService.buscarPontuacaoParcial(faseId);
@@ -105,6 +107,31 @@ public class GeradorDeRelatoriosService {
             context.setVariable("categoria", categoria);
 
             String html = templateEngine.process("relatorio_ranking_categoria", context);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.withHtmlContent(html, null);
+            builder.toStream(outputStream);
+            builder.run();
+
+            return outputStream.toByteArray();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erro ao gerar PDF", e);
+        }
+    }
+
+    public byte[] gerarRelatorioDisputasPorFase(UUID faseId) {
+        Fase fase = faseService.buscaFasePorUuid(faseId);
+        RelatorioDisputasCompletoDto dados = disputaService.buscarDisputasAgrupadasPorFase(fase.getId());
+
+        try {
+            Context context = new Context();
+            context.setVariable("dados", dados);
+
+            String html = templateEngine.process("relatorio_disputas_fase", context);
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 

@@ -6,6 +6,7 @@ import com.labjb.cms.domain.model.Campeonato;
 import com.labjb.cms.domain.model.Jurado;
 import com.labjb.cms.repository.CampeonatoRepository;
 import com.labjb.cms.repository.JuradoRepository;
+import com.labjb.cms.shared.errors.exception.RegraNegocioException;
 import com.labjb.cms.shared.mapper.JuradoMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,8 +27,10 @@ public class JuradoService {
         Campeonato campeonato = campeonatoRepository.findByUuid(juradoForm.campeonatoId())
                 .orElseThrow(() -> new RuntimeException("Campeonato não encontrado"));
 
+        Integer maximoNumeroPorCampeonatoUuid = juradoRepository.findMaxNumeroByCampeonatoUuid(campeonato.getUuid());
         Jurado jurado = juradoMapper.toEntity(juradoForm);
         jurado.setCampeonato(campeonato);
+        jurado.setNumero(maximoNumeroPorCampeonatoUuid + 1);
 
         return juradoMapper.toDto(juradoRepository.save(jurado));
     }

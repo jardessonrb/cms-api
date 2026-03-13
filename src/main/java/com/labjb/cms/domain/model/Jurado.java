@@ -21,6 +21,7 @@ public class Jurado extends BaseEntity {
     private String nome;
     private String apelido;
     private String grupo;
+    private Integer numero;
 
     @OneToMany(mappedBy = "jurado", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Nota> notas;

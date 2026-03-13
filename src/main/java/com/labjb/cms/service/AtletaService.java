@@ -47,7 +47,7 @@ public class AtletaService {
                 .orElseThrow(() -> new EntityNotFoundException("Campeonato não encontrado"));
 
         // Validar se o número já existe no campeonato
-        if (atletaForm.numero() != null) {
+        if (atletaForm.numero() != null && atletaForm.numero() != 0) {
             atletaRepository.findByNumeroAndCampeonatoUuid(atletaForm.numero(), atletaForm.campeonatoId())
                     .ifPresent(atleta -> {
                         throw new RegraNegocioException("Já existe um atleta com o número " + atletaForm.numero() + " neste campeonato");

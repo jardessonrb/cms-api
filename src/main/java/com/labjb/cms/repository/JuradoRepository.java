@@ -16,6 +16,7 @@ import java.util.UUID;
 public interface JuradoRepository extends JpaRepository<Jurado, Long> {
 
     Optional<Jurado> findByUuid(UUID uuid);
+    Optional<Jurado> findByNumeroAndCampeonatoUuid(Integer numero, UUID campeonatoId);
 
     List<Jurado> findByUuidIn(List<UUID> uuids);
 
@@ -25,8 +26,12 @@ public interface JuradoRepository extends JpaRepository<Jurado, Long> {
               AND (:filtro IS NULL OR
                    LOWER(j.nome)    LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
                    LOWER(j.apelido) LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
-                   LOWER(j.grupo)   LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')))
-            ORDER BY j.criadoEm DESC
+                   LOWER(j.grupo)   LIKE LOWER(CONCAT('%', CAST(:filtro AS string), '%')) OR
+                   CAST(j.numero AS string) LIKE CONCAT('%', CAST(:filtro AS string), '%'))
+            ORDER BY j.numero ASC, j.criadoEm DESC
             """)
     Page<Jurado> findAllByCampeonatoWithFilter(@Param("filtro") String filtro, @Param("campeonatoId") UUID campeonatoId, Pageable pageable);
+
+    @Query("SELECT coalesce(MAX(j.numero), 0) FROM Jurado j WHERE j.campeonato.uuid = :campeonatoId")
+    Integer findMaxNumeroByCampeonatoUuid(@Param("campeonatoId") UUID campeonatoId);
 }

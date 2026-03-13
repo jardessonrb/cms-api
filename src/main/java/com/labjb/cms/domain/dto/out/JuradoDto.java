@@ -8,6 +8,6 @@ public record JuradoDto(
         String nome,
         String apelido,
         String grupo,
+        Integer numero,
         LocalDateTime criadoEm
-) {
-}
+) {}

@@ -2,6 +2,9 @@ package com.labjb.cms.service;
 
 import com.labjb.cms.domain.dto.in.DisputaForm;
 import com.labjb.cms.domain.dto.out.DisputaDto;
+import com.labjb.cms.domain.dto.out.DisputaPorFaseDto;
+import com.labjb.cms.domain.dto.out.RelatorioDisputasPorRodadaDto;
+import com.labjb.cms.domain.dto.out.RelatorioDisputasCompletoDto;
 import com.labjb.cms.domain.enums.SituacaoDisputaEnum;
 import com.labjb.cms.domain.enums.TipoDisputaEnum;
 import com.labjb.cms.domain.enums.TipoRegistroPontuacaoEnum;
@@ -20,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -91,5 +95,37 @@ public class DisputaService {
         }
 
         throw new RegraNegocioException("Tipo de disputa não definido.");
+    }
+
+    public RelatorioDisputasCompletoDto buscarDisputasAgrupadasPorFase(Long faseId) {
+        List<Object[]> resultados = rodadaRepository.findDisputasPorFase(faseId);
+        
+        List<DisputaPorFaseDto> disputas = resultados.stream()
+                .map(obj -> new DisputaPorFaseDto(
+                    (String) obj[0],  // categoria
+                    (String) obj[1],  // fase
+                    (String) obj[2],  // tipoDisputa
+                    (String) obj[3],  // situacao
+                    (String) obj[4],  // rodada
+                    (String) obj[5],  // atleta1
+                    (String) obj[6]   // atleta2
+                ))
+                .collect(Collectors.toList());
+        
+        if (disputas.isEmpty()) {
+            return null;
+        }
+        
+        String categoria = disputas.get(0).categoria();
+        String fase = disputas.get(0).fase();
+        
+        Map<String, List<DisputaPorFaseDto>> agrupadoPorRodada = disputas.stream()
+                .collect(Collectors.groupingBy(DisputaPorFaseDto::rodada));
+        
+        List<RelatorioDisputasPorRodadaDto> rodadas = agrupadoPorRodada.entrySet().stream()
+                .map(entry -> new RelatorioDisputasPorRodadaDto(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+        
+        return new RelatorioDisputasCompletoDto(categoria, fase, rodadas);
     }
 }
